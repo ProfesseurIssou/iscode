@@ -2,7 +2,7 @@
   "name": "iscode",
 	"displayName": "ISCode",
 	"description": "Support ISCode",
-	"version": "0.0.1",
+	"version": "0.0.2",
 	"engines": {
 		"vscode": "^1.62.0"
 	},
@@ -10,7 +10,8 @@
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:iscode.translate"
+        "onCommand:iscode.translate",
+        "onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
