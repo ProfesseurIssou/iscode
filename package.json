@@ -1,8 +1,8 @@
 {
-  "name": "iscode",
+  	"name": "iscode",
 	"displayName": "ISCode",
 	"description": "Support ISCode",
-	"version": "0.0.2",
+	"version": "0.1.0",
 	"engines": {
 		"vscode": "^1.62.0"
 	},
@@ -14,12 +14,18 @@
         "onStartupFinished"
 	],
 	"main": "./out/extension.js",
-	"contributes": {
-		"commands": [
+	"contributes":{
+		"commands":[
 			{
 				"command": "iscode.translate",
-				"title": "Translate code"
+				"title": "ISCode : Translate code"
 			}
+		],
+		"keybindings":[
+		  {
+			"command": "iscode.translate",
+			"key": "f5"
+		  }
 		]
 	},
 	"scripts": {

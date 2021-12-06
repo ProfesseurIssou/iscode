@@ -7,75 +7,107 @@ import * as vscode from 'vscode';
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "iscode" is now active!');
 
+	/*CONTEXT MENU COMMAND*/
 	context.subscriptions.push(
 		vscode.commands.registerCommand('iscode.translate',()=>{
 			// vscode.window.setStatusBarMessage("test",5000);
-			TranslateCode();
+			TranslateCode(context);
 		})
 	);
+	/*####################*/
+
+	/*STATUS BAR BUTTON*/
+	let translateButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
+	translateButton.command = "iscode.translate";
+	translateButton.text = "Translate";
+	translateButton.tooltip = "Translate ISCode";
+	translateButton.show();
+
+	context.subscriptions.push();
+	/*#################*/
+
 
 	
-	context.subscriptions.push(
-		vscode.workspace.onDidSaveTextDocument((e)=>{
-			TranslateCode();
-		})
-	);
+	// context.subscriptions.push(
+	// 	vscode.workspace.onDidSaveTextDocument((e)=>{
+	// 		TranslateCode(context);
+	// 	})
+	// );
+
+	//////////////Afficher la liste des translations possible depuis le fichier actuel
 }
 
-function TranslateCode(){
+const TranslateCode = async (context: vscode.ExtensionContext)=>{
 	const srcFile = vscode.window.activeTextEditor;
 	if(srcFile){
 		const srcFilePathTotal = srcFile.document.fileName;
 		const srcFileName = srcFilePathTotal.split("\\")[srcFilePathTotal.split("\\").length-1];
 		const srcFilePath = srcFilePathTotal.replace(srcFileName,"");
-		const currentCodeLevel = srcFileName.split(".")[srcFileName.split(".").length-1].replace("_","");
+		const currentCodeLevel = srcFileName.split(".")[srcFileName.split(".").length-1];
 
-		if(currentCodeLevel === 'isc0'){
-			vscode.window.showInformationMessage(currentCodeLevel+" => NASM");
-			ConvertISC0(srcFilePath,srcFileName);
-		}else{
-			vscode.window.showInformationMessage("File not compatible");
-		}
-		
+		console.log("Input file : "+srcFileName);
+
+		try{
+			const convertFile = require("fs");
+			let jsonFileStr:string = convertFile.readFileSync(context.extensionPath+"/src/convert/"+currentCodeLevel+".json",{encoding:'utf8', flag:'r'});
+			const convertJson = JSON.parse(jsonFileStr);	
+
+			try{
+				let outputCodeLevel:string = "";
+				let availableOutput = Object.keys(convertJson["translation"]);
+				const selectedOutput = String(await vscode.window.showQuickPick(availableOutput));
+				console.log(currentCodeLevel+" => "+convertJson["translation"][selectedOutput]["outputExtension"]);
+				/*CONVERT*/
+				ConvertISCode(srcFilePath,srcFileName,convertJson["translation"][selectedOutput]);
+				/*#######*/				
+			}catch(error){
+				console.error(error);
+				// vscode.window.showErrorMessage(String(error));
+				vscode.window.showErrorMessage("No output format selected");
+			}
+
+		}catch(error){
+			console.error(error);
+			// vscode.window.showErrorMessage(String(error));
+			vscode.window.showErrorMessage("File not compatible");
+		}		
 	}else{
 		vscode.window.showInformationMessage("No selected file");
 	}
-}
+};
 
-function ConvertISC0(filePath:String,fileName:string){
-	const convertTableISC0 = require("../src/convert/isc0.json");
+function ConvertISCode(filePath:string,fileName:string,jsonOutputExtention:any){
 	let outputCode = "";
 
-	const inputFile = require('fs');
-	inputFile.readFile(filePath+fileName,function(err:any,data:any){
-		if(err){throw err;};
-		const inputLines = data.toString().replace(/\r\n/g,'\n').split('\n');
-		inputLines.forEach((inputLine:string, lineIndex:number) => {
-			let instructionFind = false;
-			Object.keys(convertTableISC0).forEach(function(key){
-				let expr = new RegExp(convertTableISC0[key][0]);
-				let outputPatern = convertTableISC0[key][1];
-				let match = expr.exec(inputLine);
-				if(match){
-					instructionFind = true;
-					outputCode += outputPatern.replace("%1",match[1]).replace("%2",match[2]).replace("%3",match[3])+"\n";
-				}
-			});
-			// if(!instructionFind){return new Error("Instruction not found line "+String(lineIndex));};
-			// if(!instructionFind){vscode.window.showErrorMessage("Instruction not found line "+String(lineIndex+1));return;};
-			if(!instructionFind){vscode.window.showInformationMessage("Instruction not found line "+String(lineIndex+1));return;};
-			console.log(inputLine);
-		});
-		const outputFile = require("fs");
-		outputFile.writeFileSync(filePath+fileName.split(".")[0]+".nasm",outputCode,function(err:any){
-			if(err){
-				return console.log("error");
+	const inputFile = require("fs");
+	let data = inputFile.readFileSync(filePath+fileName,{encoding:'utf8', flag:'r'});
+
+	const inputLines = data.toString().replace(/\r\n/g,'\n').split('\n');
+	inputLines.forEach((inputLine:string, lineIndex:number) => {
+		let instructionFind = false;
+		Object.keys(jsonOutputExtention["table"]).forEach(function(key){
+			let expr = new RegExp(jsonOutputExtention["table"][key][0]);
+			let outputPatern = jsonOutputExtention["table"][key][1];
+			let match = expr.exec(inputLine);
+			if(match){
+				instructionFind = true;
+				outputCode += outputPatern.replace("%1",match[1]).replace("%2",match[2]).replace("%3",match[3])+"\n";
 			}
 		});
+		// if(!instructionFind){return new Error("Instruction not found line "+String(lineIndex));};
+		// if(!instructionFind){vscode.window.showErrorMessage("Instruction not found line "+String(lineIndex+1));return;};
+		if(!instructionFind){vscode.window.showErrorMessage("Instruction not found line "+String(lineIndex+1));return;};
+		console.log(inputLine);
 	});
-
+	
+	const outputFile = require("fs");
+	outputFile.writeFileSync(filePath+fileName.split(".")[0]+"."+jsonOutputExtention["outputExtension"],outputCode,function(err:any){
+		if(err){
+			return console.log("error");
+		}
+	});
+	vscode.window.showInformationMessage("Done");
 }
-
 
 
 //Quand l'extension est désactivé
