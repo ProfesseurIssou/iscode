@@ -2,7 +2,7 @@
   	"name": "iscode",
 	"displayName": "ISCode",
 	"description": "Support ISCode",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"engines": {
 		"vscode": "^1.62.0"
 	},
@@ -10,12 +10,17 @@
 		"Other"
 	],
 	"activationEvents": [
+        "onCommand:iscode.openFolder",
         "onCommand:iscode.translate",
         "onStartupFinished"
 	],
 	"main": "./out/extension.js",
 	"contributes":{
 		"commands":[
+			{
+				"command": "iscode.openFolder",
+				"title": "ISCode : Open translate folder"
+			},
 			{
 				"command": "iscode.translate",
 				"title": "ISCode : Translate code"

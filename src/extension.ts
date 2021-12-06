@@ -14,6 +14,13 @@ export function activate(context: vscode.ExtensionContext) {
 			TranslateCode(context);
 		})
 	);
+	context.subscriptions.push(
+		vscode.commands.registerCommand('iscode.openFolder',()=>{
+			// vscode.commands.executeCommand("revealFileInOS",context.extensionPath);
+			let success = vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(context.extensionPath+"/src/convert"),true);
+
+		})
+	);
 	/*####################*/
 
 	/*STATUS BAR BUTTON*/
