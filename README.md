@@ -31,7 +31,8 @@ ISCode : Open translate folder
     ##### Example:
     "***testCode***.json" are selected when the current file format is "####.***testCode***"
 <br>
-4. Copy paste the next json pattern and define your translation table
+4. Copy paste the next json pattern and define your translation table :
+
 ```JSON
 {
     "name":"{{FormatExtension}}",
@@ -45,7 +46,9 @@ ISCode : Open translate folder
     }
 }
 ```
+
 ##### Exemple :
+
 ```JSON
 {
     "name":"isc0",
