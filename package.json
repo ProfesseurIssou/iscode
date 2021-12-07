@@ -1,12 +1,12 @@
 {
-  	"name": "iscode",
+	"name": "iscode",
 	"displayName": "ISCode",
 	"description": "Support ISCode",
-	"version": "0.1.1",
+	"version": "0.1.2",
 	"publisher": "ProfesseurIssou",
 	"repository": {
-	  "url": "https://github.com/ProfesseurIssou/iscode"
-  	},
+		"url": "https://github.com/ProfesseurIssou/iscode"
+	},
 	"engines": {
 		"vscode": "^1.60.0"
 	},
@@ -14,13 +14,13 @@
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:iscode.openFolder",
-        "onCommand:iscode.translate",
-        "onStartupFinished"
+		"onCommand:iscode.openFolder",
+		"onCommand:iscode.translate",
+		"onStartupFinished"
 	],
 	"main": "./out/extension.js",
-	"contributes":{
-		"commands":[
+	"contributes": {
+		"commands": [
 			{
 				"command": "iscode.openFolder",
 				"title": "ISCode : Open translate folder"
@@ -30,11 +30,11 @@
 				"title": "ISCode : Translate code"
 			}
 		],
-		"keybindings":[
-		  {
-			"command": "iscode.translate",
-			"key": "f5"
-		  }
+		"keybindings": [
+			{
+				"command": "iscode.translate",
+				"key": "f5"
+			}
 		]
 	},
 	"scripts": {

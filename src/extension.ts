@@ -17,7 +17,7 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(
 		vscode.commands.registerCommand('iscode.openFolder',()=>{
 			// vscode.commands.executeCommand("revealFileInOS",context.extensionPath);
-			let success = vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(context.extensionPath+"/src/convert"),true);
+			let success = vscode.commands.executeCommand('vscode.openFolder', vscode.Uri.file(context.extensionPath+"/convert"),true);
 
 		})
 	);
@@ -56,7 +56,7 @@ const TranslateCode = async (context: vscode.ExtensionContext)=>{
 
 		try{
 			const convertFile = require("fs");
-			let jsonFileStr:string = convertFile.readFileSync(context.extensionPath+"/src/convert/"+currentCodeLevel+".json",{encoding:'utf8', flag:'r'});
+			let jsonFileStr:string = convertFile.readFileSync(context.extensionPath+"/convert/"+currentCodeLevel+".json",{encoding:'utf8', flag:'r'});
 			const convertJson = JSON.parse(jsonFileStr);	
 
 			try{
