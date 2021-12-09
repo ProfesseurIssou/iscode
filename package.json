@@ -2,7 +2,7 @@
 	"name": "iscode",
 	"displayName": "ISCode",
 	"description": "Support ISCode",
-	"version": "0.1.2",
+	"version": "0.1.3",
 	"publisher": "ProfesseurIssou",
 	"repository": {
 		"url": "https://github.com/ProfesseurIssou/iscode"
@@ -11,7 +11,7 @@
 		"vscode": "^1.60.0"
 	},
 	"categories": [
-		"Other"
+		"Programming Languages"
 	],
 	"activationEvents": [
 		"onCommand:iscode.openFolder",
@@ -28,12 +28,6 @@
 			{
 				"command": "iscode.translate",
 				"title": "ISCode : Translate code"
-			}
-		],
-		"keybindings": [
-			{
-				"command": "iscode.translate",
-				"key": "f5"
 			}
 		]
 	},

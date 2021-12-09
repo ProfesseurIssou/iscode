@@ -1,4 +1,4 @@
-# ISCode Support 0.1.1
+# ISCode Support 0.1.3
 ## Translate
 Open your ISCode file
 Press CTRL+SHIFT+P and type :
@@ -36,14 +36,29 @@ ISCode : Open translate folder
 ```JSON
 {
     "name":"{{FormatExtension}}",
-    "translation":{
+    "translation":{                                     //Possible translation
         "{{OutputFormatName}}":{
             "outputExtension":"{{OutputExtension}}",
             "table":{
-                "{{InstructionName}}":["{{REGEX WITH SELECTION GROUP}}","{{TRANSLATED CODE WITH %{{groupNumber}} }}"]
+                "{{InstructionName1}}":["{{REGEX WITH SELECTION GROUP}}","{{TRANSLATED CODE WITH %{{groupNumber}} }}"],
+                "{{InstructionName2}}":["{{REGEX WITH SELECTION GROUP}}","{{TRANSLATED CODE WITH %{{groupNumber}} }}"]
             }
         }
-    }
+    },
+    "instructions":[                                    //Snippets
+        {
+            "name":"{{InstructionName1}}",
+            "output":"{{Output1}}",
+            "documentation":"{{InstructionDocumentation1}}",
+            "commitChars":null
+        },
+        {
+            "name":"{{InstructionName2}}",
+            "output":"{{Output2}}",
+            "documentation":"{{InstructionDocumentation2}}",
+            "commitChars":null
+        }
+    ]
 }
 ```
 
@@ -61,6 +76,29 @@ ISCode : Open translate folder
                 "assign":["([a-zA-Z0-9]+)[ ]{0,}(=)[ ]{0,}([\\S]{1}.{0,})","mov %1,%3"]     //a=5       TO  mov a,5
             }
         }
-    }
+    },
+    "instructions":[
+        {
+            "name":"architectureMode",                                                      //mode selected
+            "output":"mode[${1|8,16,32,64|}]",                                              //Selection between 8,16,32 and 64 bits
+            "documentation":"Set architecture mode",
+            "commitChars":null
+        },
+        {
+            "name":"assign",                                                                //Assign
+            "output":"${1} = ${2}",
+            "documentation":"Assign a register with value",
+            "commitChars":null
+        }
+    ]
 }
+```
+
+
+## REGEX Tips
+
+### Indentation
+
+```REGEX
+^([ ]{0,})
 ```

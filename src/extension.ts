@@ -26,22 +26,36 @@ export function activate(context: vscode.ExtensionContext) {
 	/*STATUS BAR BUTTON*/
 	let translateButton = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Left, 0);
 	translateButton.command = "iscode.translate";
-	translateButton.text = "Translate";
+	translateButton.text = "ISCode : Translate";
 	translateButton.tooltip = "Translate ISCode";
 	translateButton.show();
-
-	context.subscriptions.push();
+	context.subscriptions.push(translateButton);
 	/*#################*/
 
+    /*AUTO COMPLETE*/
+    const completionProvider = vscode.languages.registerCompletionItemProvider("*",{
+		provideCompletionItems(document: vscode.TextDocument, position: vscode.Position, token: vscode.CancellationToken, completionContext: vscode.CompletionContext) {
+            const srcFileName = document.fileName.split("\\")[document.fileName.split("\\").length-1];
+		    const currentCodeLevel = srcFileName.split(".")[srcFileName.split(".").length-1];
+            
+            const convertFile = require("fs");
+			let jsonFileStr:string = convertFile.readFileSync(context.extensionPath+"/convert/"+currentCodeLevel+".json",{encoding:'utf8', flag:'r'});
+			const convertJson = JSON.parse(jsonFileStr);
 
-	
-	// context.subscriptions.push(
-	// 	vscode.workspace.onDidSaveTextDocument((e)=>{
-	// 		TranslateCode(context);
-	// 	})
-	// );
+            let completionList = [];
+            for(let i=0;i<convertJson["instructions"].length;i++){
+                let completion = new vscode.CompletionItem(convertJson["instructions"][i]["name"]);
+                completion.insertText = new vscode.SnippetString(convertJson["instructions"][i]["output"]);
+                if(convertJson["instructions"][i]["documentation"])completion.documentation = new vscode.MarkdownString(convertJson["instructions"][i]["documentation"]);
+                if(convertJson["instructions"][i]["commitChar"])completion.commitCharacters = convertJson["instructions"][i]["commitChar"];
+                completionList.push(completion);
+            }
 
-	//////////////Afficher la liste des translations possible depuis le fichier actuel
+			return completionList;
+		}
+    });
+    context.subscriptions.push(completionProvider);
+    /*#############*/
 }
 
 const TranslateCode = async (context: vscode.ExtensionContext)=>{
@@ -99,7 +113,8 @@ function ConvertISCode(filePath:string,fileName:string,jsonOutputExtention:any){
 			if(match){
 				instructionFind = true;
 				outputCode += outputPatern.replace("%1",match[1]).replace("%2",match[2]).replace("%3",match[3])+"\n";
-			}
+                //Aller a la ligne suivante
+            }
 		});
 		// if(!instructionFind){return new Error("Instruction not found line "+String(lineIndex));};
 		// if(!instructionFind){vscode.window.showErrorMessage("Instruction not found line "+String(lineIndex+1));return;};
