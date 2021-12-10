@@ -3,6 +3,32 @@
 // https://code.visualstudio.com/api/references/vscode-api
 import * as vscode from 'vscode';
 
+export interface AvailableTranslation{
+    [key:string]:string
+}
+export interface Snippet{
+    output:string,
+    documentation:string,
+    commitChars:Array<string>
+}
+export interface Token{
+    [key:string]:string
+}
+export interface Instruction{
+    syntax:Array<string>,
+    snippet:Snippet,
+    translation:AvailableTranslation
+}
+export interface Instructions{
+    [key:string]:Instruction
+}
+export interface LanguageJson{
+    name: string,
+    availableTranslation: AvailableTranslation,
+    tokens: Token,
+    instructions:Instructions
+}
+
 //Lors de l'activation de l'extension
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "iscode" is now active!');
@@ -40,15 +66,17 @@ export function activate(context: vscode.ExtensionContext) {
             
             const convertFile = require("fs");
 			let jsonFileStr:string = convertFile.readFileSync(context.extensionPath+"/convert/"+currentCodeLevel+".json",{encoding:'utf8', flag:'r'});
-			const convertJson = JSON.parse(jsonFileStr);
+			const languageJson:LanguageJson = JSON.parse(jsonFileStr);
 
             let completionList = [];
-            for(let i=0;i<convertJson["instructions"].length;i++){
-                let completion = new vscode.CompletionItem(convertJson["instructions"][i]["name"]);
-                completion.insertText = new vscode.SnippetString(convertJson["instructions"][i]["output"]);
-                if(convertJson["instructions"][i]["documentation"])completion.documentation = new vscode.MarkdownString(convertJson["instructions"][i]["documentation"]);
-                if(convertJson["instructions"][i]["commitChar"])completion.commitCharacters = convertJson["instructions"][i]["commitChar"];
-                completionList.push(completion);
+            for(let instructionName in languageJson.instructions){
+                if(languageJson.instructions[instructionName].snippet){                                             //Si l'instruction a un snippets
+                    let completion = new vscode.CompletionItem(instructionName);
+                    completion.insertText = new vscode.SnippetString(languageJson.instructions[instructionName].snippet.output);
+                    if(languageJson.instructions[instructionName].snippet.documentation)completion.documentation = new vscode.MarkdownString(languageJson.instructions[instructionName].snippet.documentation);
+                    if(languageJson.instructions[instructionName].snippet.commitChars)completion.commitCharacters = languageJson.instructions[instructionName].snippet.commitChars;
+                    completionList.push(completion);
+                }
             }
 
 			return completionList;
@@ -71,15 +99,19 @@ const TranslateCode = async (context: vscode.ExtensionContext)=>{
 		try{
 			const convertFile = require("fs");
 			let jsonFileStr:string = convertFile.readFileSync(context.extensionPath+"/convert/"+currentCodeLevel+".json",{encoding:'utf8', flag:'r'});
-			const convertJson = JSON.parse(jsonFileStr);	
+			const languageJson:LanguageJson = JSON.parse(jsonFileStr);	
 
 			try{
 				let outputCodeLevel:string = "";
-				let availableOutput = Object.keys(convertJson["translation"]);
-				const selectedOutput = String(await vscode.window.showQuickPick(availableOutput));
-				console.log(currentCodeLevel+" => "+convertJson["translation"][selectedOutput]["outputExtension"]);
+                let availableOutput = [];
+                for(let translationName in languageJson.availableTranslation){
+                    availableOutput.push(translationName);
+                }
+				const selectedOutput:string = String(await vscode.window.showQuickPick(availableOutput));
+
+				console.log(currentCodeLevel+" => "+languageJson.availableTranslation[selectedOutput]);
 				/*CONVERT*/
-				ConvertISCode(srcFilePath,srcFileName,convertJson["translation"][selectedOutput]);
+				ConvertISCode(srcFilePath,srcFileName,languageJson,selectedOutput);
 				/*#######*/				
 			}catch(error){
 				console.error(error);
@@ -97,22 +129,28 @@ const TranslateCode = async (context: vscode.ExtensionContext)=>{
 	}
 };
 
-function ConvertISCode(filePath:string,fileName:string,jsonOutputExtention:any){
-	let outputCode = "";
+function ConvertISCode(filePath:string,fileName:string,languageJson:LanguageJson,targetLanguage:string){
+	let outputCode = "";                                                                                //Code de sortie
 
-	const inputFile = require("fs");
-	let data = inputFile.readFileSync(filePath+fileName,{encoding:'utf8', flag:'r'});
+	const inputFile = require("fs");                                                                    //Lecture du fichier
+	let data = inputFile.readFileSync(filePath+fileName,{encoding:'utf8', flag:'r'});                   //Lecture du fichier d'entrée
 
-	const inputLines = data.toString().replace(/\r\n/g,'\n').split('\n');
-	inputLines.forEach((inputLine:string, lineIndex:number) => {
-		let instructionFind = false;
-		Object.keys(jsonOutputExtention["table"]).forEach(function(key){
-			let expr = new RegExp(jsonOutputExtention["table"][key][0]);
-			let outputPatern = jsonOutputExtention["table"][key][1];
-			let match = expr.exec(inputLine);
-			if(match){
-				instructionFind = true;
-				outputCode += outputPatern.replace("%1",match[1]).replace("%2",match[2]).replace("%3",match[3])+"\n";
+	const inputLines = data.toString().replace(/\r\n/g,'\n').split('\n');                               //On separe chaque ligne
+	inputLines.forEach((inputLine:string,lineIndex:number)=>{                                           //Pour chaque ligne
+		let instructionFind = false;                                                                        //Si on trouve l'instruction
+		Object.keys(languageJson.instructions).forEach(function(key){                                       //Pour chaque instruction du language
+            let regex:string = "";                                                                              //Expression final de l'instruction
+            for(let i in languageJson.instructions[key].syntax)regex+="("+languageJson.tokens[languageJson.instructions[key].syntax[i]]+")";//Pour chaque partie de la syntax => on ajoute la partie regex du token au regex final
+
+			let expr = new RegExp(regex);                                                                       //On créé l'expression regex
+			let outputPatern = languageJson.instructions[key].translation[targetLanguage];                      //On recupere le patern du langage cible
+			let match = expr.exec(inputLine);                                                                   //On applique l'expression regex
+			if(match){                                                                                          //Si on a trouvé
+				instructionFind = true;                                                                             //On definie comme quoi la ligne a était identifier
+				for(let i=1;i<match.length;i++){                                                                    //Pour chaque partie trouvé (sans compter le premier)
+                    outputPatern = outputPatern.replace("%"+String(i),match[i]);                                        //On remplace la partie
+                }
+                outputCode += outputPatern+"\n";                                                                    //On ajoute l'instruction dans le code finale
                 //Aller a la ligne suivante
             }
 		});
@@ -123,7 +161,7 @@ function ConvertISCode(filePath:string,fileName:string,jsonOutputExtention:any){
 	});
 	
 	const outputFile = require("fs");
-	outputFile.writeFileSync(filePath+fileName.split(".")[0]+"."+jsonOutputExtention["outputExtension"],outputCode,function(err:any){
+	outputFile.writeFileSync(filePath+fileName.split(".")[0]+"."+languageJson.availableTranslation[targetLanguage],outputCode,function(err:any){
 		if(err){
 			return console.log("error");
 		}

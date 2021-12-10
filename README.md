@@ -1,4 +1,4 @@
-# ISCode Support 0.1.3
+# ISCode Support 0.2.0
 ## Translate
 Open your ISCode file
 Press CTRL+SHIFT+P and type :
@@ -36,29 +36,30 @@ ISCode : Open translate folder
 ```JSON
 {
     "name":"{{FormatExtension}}",
-    "translation":{                                     //Possible translation
-        "{{OutputFormatName}}":{
-            "outputExtension":"{{OutputExtension}}",
-            "table":{
-                "{{InstructionName1}}":["{{REGEX WITH SELECTION GROUP}}","{{TRANSLATED CODE WITH %{{groupNumber}} }}"],
-                "{{InstructionName2}}":["{{REGEX WITH SELECTION GROUP}}","{{TRANSLATED CODE WITH %{{groupNumber}} }}"]
+    "availableTranslation":{
+        "{{OutputFormatName}}":"{{OutputFileExtension}}"
+    },
+    "tokens":{
+        "{{ExprName1}}":"{{REGEX1}}",
+        "{{ExprName2}}":"{{REGEX2}}",
+        "{{ExprName3}}":"{{REGEX3}}",
+
+    },
+    "instructions":{
+        "{{InstructionName1}}":{
+            "syntax":[
+                "{{ExprName1}}"
+            ],
+            "snippet":{
+                "output":"{{Output1}}",
+                "documentation":"{{InstructionDocumentation1}}",
+                "commitChars":null
+            },
+            "translation":{
+                "{{OutputFormatName}}":"{{TRANSLATED CODE WITH %{{syntaxIndex}} }}"
             }
         }
-    },
-    "instructions":[                                    //Snippets
-        {
-            "name":"{{InstructionName1}}",
-            "output":"{{Output1}}",
-            "documentation":"{{InstructionDocumentation1}}",
-            "commitChars":null
-        },
-        {
-            "name":"{{InstructionName2}}",
-            "output":"{{Output2}}",
-            "documentation":"{{InstructionDocumentation2}}",
-            "commitChars":null
-        }
-    ]
+    }
 }
 ```
 
@@ -66,39 +67,56 @@ ISCode : Open translate folder
 
 ```JSON
 {
-    "name":"isc0",
-    "translation":{
-        "nasm_x86_x64":{
-            "outputExtension":"nasm",
-            "table":{
-                "emptyLine":["^\n*$",""],                                                   //Empty line
-                "architectureMode":["mode[ ]+([0-9]{1,3})","[BITS %1]"],                    //mode 64   TO  [BITS 64]
-                "assign":["([a-zA-Z0-9]+)[ ]{0,}(=)[ ]{0,}([\\S]{1}.{0,})","mov %1,%3"]     //a=5       TO  mov a,5
+    "name":"isc0",                                                      //Name of file extension
+    "availableTranslation":{                                            //List of all possible translation
+        "nasm_x86_x64":"nasm"                                               //OutputName : Output file extension
+    },
+    "tokens":{                                                          //List of all tokens
+        "all":".*",
+
+        "doubleSlash":"[/]{2}",
+        "indentation":"[ ]{0,}",
+        "space":"[ ]{1,}",
+
+        "numbers":"[0-9]{1,}",
+        "communData":"[a-zA-Z0-9_\\[\\]\\-\\+\\*\\,\\$]{1,}",
+
+        "InstMode":"mode",
+        "InstSyscall":"syscall",
+
+    },
+    "instructions":{                                                    //List of all instructions
+        "architectureMode":{
+            "syntax":[                                                      //Syntax of the instruction (with tokens name)
+                "indentation",
+                "InstMode",
+                "space",
+                "numbers"
+            ],
+            "snippet":{                                                     //Autocomplete
+                "output":"mode ${1|8,16,32,64|}",
+                "documentation":"Set architecture mode",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1bits%3%4"
+            },
+        "syscall":{
+            "syntax":[
+                "indentation",
+                "InstSyscall",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"syscall ${1}",
+                "documentation":"System call",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1int%3%4"
             }
         }
-    },
-    "instructions":[
-        {
-            "name":"architectureMode",                                                      //mode selected
-            "output":"mode[${1|8,16,32,64|}]",                                              //Selection between 8,16,32 and 64 bits
-            "documentation":"Set architecture mode",
-            "commitChars":null
-        },
-        {
-            "name":"assign",                                                                //Assign
-            "output":"${1} = ${2}",
-            "documentation":"Assign a register with value",
-            "commitChars":null
-        }
-    ]
+    }
 }
-```
-
-
-## REGEX Tips
-
-### Indentation
-
-```REGEX
-^([ ]{0,})
 ```

@@ -1,169 +1,450 @@
 {
     "name":"isc0",
-    "translation":{
-        "nasm_x86_x64":{
-            "outputExtension":"nasm",
-            "table":{
-                "emptyLine":["^\n*$",""],
-                "comment":["^([ ]{0,})[/]{2}(.*)$","%1;%2"],
+    "availableTranslation":{
+        "nasm_x86_x64":"nasm"
+    },
+    "tokens":{
+        "emptyLine":"^\n*$",
+        "all":".*",
 
-                "architectureMode":["^([ ]{0,})mode[ ]{1,}([0-9]{1,3})","%1bits %2"],
-                "global":["^([ ]{0,})global[ ]{1,}(.{1,})","%1global %2"],
+        "doubleSlash":"[/]{2}",
+        "indentation":"[ ]{0,}",
+        "space":"[ ]{1,}",
 
-                "function":["^([ ]{0,})func[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,}):","%1%2:"],
-                "callFunction":["^([ ]{0,})call[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})","%1call %2"],
+        "numbers":"[0-9]{1,}",
+        "communData":"[a-zA-Z0-9_\\[\\]\\-\\+\\*\\,\\$]{1,}",
 
-                "syscall":["^([ ]{0,})syscall[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})","%1int %2"],
+        "InstMode":"mode",
+        "InstGlobal":"global",
 
-                "sectionConstant":["^([ ]{0,})CONST:","%1section .data"],
-                "sectionVar":["^([ ]{0,})VAR:","%1section .bss"],
-                "sectionCode":["^([ ]{0,})CODE:","%1section .text"],
-                
-                "assign":["^([ ]{0,})([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{0,}=[ ]{0,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})","%1mov %2,%3"],
-                "equivalent":["^([ ]{0,})equ[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([\\S]{1}.{0,})","%1%2 equ %3"],
-                
-                "defineByte":["^([ ]{0,})byte[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([\\S]{1}.{0,})","%1%2 db %3"],
-                "defineWord":["^([ ]{0,})word[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([\\S]{1}.{0,})","%1%2 dw %3"],
-                "defineDouble":["^([ ]{0,})double[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([\\S]{1}.{0,})","%1%2 dd %3"],
-                "defineQuadruple":["^([ ]{0,})quadruple[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([\\S]{1}.{0,})","%1%2 dq %3"],
-                "defineTen":["^([ ]{0,})ten[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([\\S]{1}.{0,})","%1%2 dt %3"],
-            
-                "reserveByte":["^([ ]{0,})reserve[ ]{1,}byte[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([a-zA-Z0-9_\\[\\]])","%1%2 resb %3"],
-                "reserveWord":["^([ ]{0,})reserve[ ]{1,}word[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([a-zA-Z0-9_\\[\\]])","%1%2 resw %3"],
-                "reserveDouble":["^([ ]{0,})reserve[ ]{1,}double[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([a-zA-Z0-9_\\[\\]])","%1%2 resd %3"],
-                "reserveQuadruple":["^([ ]{0,})reserve[ ]{1,}quadruple[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([a-zA-Z0-9_\\[\\]])","%1%2 resq %3"],
-                "reserveTen":["^([ ]{0,})reserve[ ]{1,}ten[ ]{1,}([a-zA-Z0-9_\\[\\]\\-\\+\\*]{1,})[ ]{1,}([a-zA-Z0-9_\\[\\]])","%1%2 rest %3"],
+        "InstFunc":"func",
+        "InstCallFunc":"[^a-zA-Z]call",
+        "InstSyscall":"syscall",
+        "InstSectConstant":"CONST:",
+        "InstSectVar":"VAR:",
+        "InstSectCode":"CODE:",
+        "InstEgal":"=",
+        "InstEquivalent":"equ",        
+        "InstReserve":"reserve",
+        "InstPush":"push",
+        "InstPop":"pop",
+        
+        "TypeByte":"byte",
+        "TypeWord":"word",
+        "TypeDouble":"double",
+        "TypeQuadruple":"quadruple"
 
-                "push":["^([ ]{0,})push[ ]{1,}(.*)$","%1push %2"],
-                "pop":["^([ ]{0,})pop[ ]{1,}(.*)$","%1pop %2"]
+    },
+    "instructions":{
+        "emptyLine":{
+            "syntax":[
+                "emptyLine"
+            ],
+            "snippet":null,
+            "translation":{
+                "nasm_x86_x64":""
+            }
+        },
+        "commentLine":{
+            "syntax":[
+                "indentation",
+                "doubleSlash",
+                "all"
+            ],
+            "snippet":null,
+            "translation":{
+                "nasm_x86_x64":"%1;%3"
+            }
+        },
+
+        "architectureMode":{
+            "syntax":[
+                "indentation",
+                "InstMode",
+                "space",
+                "numbers"
+            ],
+            "snippet":{
+                "output":"mode ${1|8,16,32,64|}",
+                "documentation":"Set architecture mode",
+                "commitChars":["."]
+            },
+            "translation":{
+                "nasm_x86_x64":"%1bits%3%4"
+            }
+        },
+        "global":{
+            "syntax":[
+                "indentation",
+                "InstGlobal",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"global ${1}",
+                "documentation":"Set entry point",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1global%3%4"
+            }
+        },
+
+        "function":{
+            "syntax":[
+                "indentation",
+                "InstFunc",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"func ${1}:",
+                "documentation":"Set label",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%4:"
+            }
+        },
+        "callFunction":{
+            "syntax":[
+                "indentation",
+                "InstCallFunc",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"call ${1}",
+                "documentation":"Call a function",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1call %3%4"
+            }
+        },
+
+        "syscall":{
+            "syntax":[
+                "indentation",
+                "InstSyscall",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"syscall ${1}",
+                "documentation":"System call",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1int%3%4"
+            }
+        },
+
+        "sectionConstant":{
+            "syntax":[
+                "indentation",
+                "InstSectConstant"
+            ],
+            "snippet":{
+                "output":"CONST:",
+                "documentation":"Constants section",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1section .data"
+            }
+        },
+        "sectionVariable":{
+            "syntax":[
+                "indentation",
+                "InstSectVar"
+            ],
+            "snippet":{
+                "output":"VAR:",
+                "documentation":"Variables section",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1section .bss"
+            }
+        },
+        "sectionCode":{
+            "syntax":[
+                "indentation",
+                "InstSectCode"
+            ],
+            "snippet":{
+                "output":"CODE:",
+                "documentation":"Code section",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1section .text"
+            }
+        },
+
+        "assign":{
+            "syntax":[
+                "indentation",
+                "communData",
+                "space",
+                "InstEgal",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"${1} = ${2}",
+                "documentation":"Assign a register with value",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1mov %2,%6"
+            }
+        },
+        "equivalent":{
+            "syntax":[
+                "indentation",
+                "InstEquivalent",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"equ ${1} ${2}",
+                "documentation":"Equivalent constant",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%4 equ %6"
+            }
+        },
+
+        "defineByte":{
+            "syntax":[
+                "indentation",
+                "TypeByte",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "snippet":{
+                "output":"byte ${1} ${2}",
+                "documentation":"Byte constant",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%4 db %6"
+            }
+        },
+        "defineWord":{
+            "syntax":[
+                "indentation",
+                "TypeWord",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "snippet":{
+                "output":"word ${1} ${2}",
+                "documentation":"Word constant",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%4 dw %6"
+            }
+        },
+        "defineDouble":{
+            "syntax":[
+                "indentation",
+                "TypeDouble",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "snippet":{
+                "output":"double ${1} ${2}",
+                "documentation":"Double constant",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%4 dd %6"
+            }
+        },
+        "defineQuadruple":{
+            "syntax":[
+                "indentation",
+                "TypeQuadruple",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "snippet":{
+                "output":"quadruple ${1} ${2}",
+                "documentation":"Quadruple constant",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%14 dq %6"
+            }
+        },
+        "defineTen":{
+            "syntax":[
+                "indentation",
+                "TypeTen",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "snippet":{
+                "output":"ten ${1} ${2}",
+                "documentation":"Ten constant",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%4 dt %6"
+            }
+        },
+
+        "reserveByte":{
+            "syntax":[
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeByte",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"reserve byte ${1} ${2}",
+                "documentation":"Byte variable",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%6 resb %8"
+            }
+        },
+        "reserveWord":{
+            "syntax":[
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeWord",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"reserve word ${1} ${2}",
+                "documentation":"Word variable",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%6 resw %8"
+            }
+        },
+        "reserveDouble":{
+            "syntax":[
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeDouble",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"reserve double ${1} ${2}",
+                "documentation":"Double variable",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%6 resd %8"
+            }
+        },
+        "reserveQuadruple":{
+            "syntax":[
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeQuadruple",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"reserve quadruple ${1} ${2}",
+                "documentation":"Quadruple variable",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%6 resq %8"
+            }
+        },
+        "reserveTen":{
+            "syntax":[
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeTen",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "snippet":{
+                "output":"reserve ten ${1} ${2}",
+                "documentation":"Ten variable",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1%6 rest %8"
+            }
+        },
+
+        "stackPush":{
+            "syntax":[
+                "indentation",
+                "InstPush",
+                "space",
+                "all"
+            ],
+            "snippet":{
+                "output":"push ${1}",
+                "documentation":"Push data into the stack",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1push %4"
+            }
+        },
+        "stackPop":{
+            "syntax":[
+                "indentation",
+                "InstPop",
+                "space",
+                "all"
+            ],
+            "snippet":{
+                "output":"pop ${1}",
+                "documentation":"Get data from the stack",
+                "commitChars":null
+            },
+            "translation":{
+                "nasm_x86_x64":"%1pop %4"
             }
         }
-    },
-    "instructions":[
-        {
-            "name":"architectureMode",
-            "output":"mode ${1|8,16,32,64|} ",
-            "documentation":"Set architecture mode",
-            "commitChars":["."]
-        },{
-            "name":"global",
-            "output":"global ${1}",
-            "documentation":"Set entry point",
-            "commitChars":null
-        },
-        
-        {
-            "name":"function",
-            "output":"func ${1}:",
-            "documentation":"Set label",
-            "commitChars":null
-        },{
-            "name":"callFunction",
-            "output":"call ${1}",
-            "documentation":"Call a function",
-            "commitChars":null
-        },
 
-        {
-            "name":"syscall",
-            "output":"syscall ${1}",
-            "documentation":"System call",
-            "commitChars":null
-        },
 
-        {
-            "name":"sectionConstant",
-            "output":"CONST:",
-            "documentation":"Constants section",
-            "commitChars":null
-        },{
-            "name":"sectionVar",
-            "output":"VAR:",
-            "documentation":"Variables section",
-            "commitChars":null
-        },{
-            "name":"sectionCode",
-            "output":"CODE:",
-            "documentation":"Code section",
-            "commitChars":null
-        },
-
-        {
-            "name":"assign",
-            "output":"${1} = ${2}",
-            "documentation":"Assign a register with value",
-            "commitChars":null
-        },{
-            "name":"equivalent",
-            "output":"equ ${1} ${2}",
-            "documentation":"Equivalent constant",
-            "commitChars":null
-        },
-        
-        {
-            "name":"defineByte",
-            "output":"byte ${1} ${2}",
-            "documentation":"Byte constant",
-            "commitChars":null
-        },{
-            "name":"defineWord",
-            "output":"word ${1} ${2}",
-            "documentation":"Word constant",
-            "commitChars":null
-        },{
-            "name":"defineDouble",
-            "output":"double ${1} ${2}",
-            "documentation":"Double constant",
-            "commitChars":null
-        },{
-            "name":"defineQuadruple",
-            "output":"quadruple ${1} ${2}",
-            "documentation":"Quadruple constant",
-            "commitChars":null
-        },{
-            "name":"defineTen",
-            "output":"ten ${1} ${2}",
-            "documentation":"Ten constant",
-            "commitChars":null
-        },
-        
-        {
-            "name":"reserveByte",
-            "output":"reserve byte ${1} ${2}",
-            "documentation":"Byte variable",
-            "commitChars":null
-        },{
-            "name":"reserveWord",
-            "output":"reserve word ${1} ${2}",
-            "documentation":"Word variable",
-            "commitChars":null
-        },{
-            "name":"reserveDouble",
-            "output":"reserve double ${1} ${2}",
-            "documentation":"Double variable",
-            "commitChars":null
-        },{
-            "name":"reserveQuadruple",
-            "output":"reserve quadruple ${1} ${2}",
-            "documentation":"Quadruple variable",
-            "commitChars":null
-        },{
-            "name":"reserveTen",
-            "output":"reserve ten ${1} ${2}",
-            "documentation":"Ten variable",
-            "commitChars":null
-        },
-
-        {
-            "name":"push",
-            "output":"push ${1}",
-            "documentation":"Push data into the stack",
-            "commitChars":null
-        },{
-            "name":"pop",
-            "output":"pop ${1}",
-            "documentation":"Get data from the stack",
-            "commitChars":null
-        }
-    ]
+    }
 }
