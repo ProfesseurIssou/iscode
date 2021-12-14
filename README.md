@@ -1,4 +1,4 @@
-# ISCode Support 0.2.0
+# ISCode Support 0.2.1
 ## Translate
 Open your ISCode file
 Press CTRL+SHIFT+P and type :

@@ -1,0 +1,44 @@
+{
+    "name":"isc1",
+    "availableTranslation":{
+        "ISCode_0":"isc0"
+    },
+    "tokens":{
+        "emptyLine":"^\n*$",
+        "all":".*",
+
+        "doubleSlash":"[/]{2}",
+        "indentation":"[ ]{0,}",
+        "space":"[ ]{1,}",
+        "openParenthesis":"\\(",
+        "closeParenthesis":"\\)",
+        "comma":"\\,",
+
+        "numbers":"[0-9]{1,}",
+        "communData":"[a-zA-Z0-9_\\[\\]\\-\\+\\*\\,\\$\\']{1,}",
+
+        "InstPrint":"print"
+
+    },
+    "instructions":{
+        "print":{
+            "syntax":[
+                "indentation",
+                "InstPrint",
+                "openParenthesis",
+                "communData",
+                "comma",
+                "communData",
+                "closeParenthesis"
+            ],
+            "snippet":{
+                "output":"print(${1},${2})",
+                "documentation":"Display something print(ptrToMessage,Lenght)",
+                "commitChars":null
+            },
+            "translation":{
+                "ISCode_0":"%1eax = 4\n%1ebx = 1\n%1ecx = %4\n%1edx = %6\n%1syscall 0x80"
+            }
+        }
+    }
+}
