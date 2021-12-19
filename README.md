@@ -1,4 +1,4 @@
-# ISCode Support 0.2.1
+# ISCode Support 0.2.2
 ## Translate
 Open your ISCode file
 Press CTRL+SHIFT+P and type :
@@ -99,7 +99,7 @@ ISCode : Open translate folder
                 "commitChars":null
             },
             "translation":{
-                "nasm_x86_x64":"%1bits%3%4"
+                "nasm_x86_x64":"%{1}bits%{3}%{4}"
             },
         "syscall":{
             "syntax":[
@@ -114,7 +114,7 @@ ISCode : Open translate folder
                 "commitChars":null
             },
             "translation":{
-                "nasm_x86_x64":"%1int%3%4"
+                "nasm_x86_x64":"%{1}int%{3}%{4}"
             }
         }
     }

@@ -9,6 +9,7 @@
 
         "doubleSlash":"[/]{2}",
         "indentation":"[ ]{0,}",
+        "optionalSpace":"[ ]{0,}",
         "space":"[ ]{1,}",
         "openParenthesis":"\\(",
         "closeParenthesis":"\\)",
@@ -17,27 +18,30 @@
         "numbers":"[0-9]{1,}",
         "communData":"[a-zA-Z0-9_\\[\\]\\-\\+\\*\\,\\$\\']{1,}",
 
-        "InstPrint":"print"
+        "IncludePrint":"include print",
+
+        "InstEgal":"=",
+        "InstParam":"prm"
 
     },
     "instructions":{
-        "print":{
+        "getParams":{
             "syntax":[
                 "indentation",
-                "InstPrint",
-                "openParenthesis",
                 "communData",
-                "comma",
-                "communData",
-                "closeParenthesis"
+                "optionalSpace",
+                "InstEgal",
+                "optionalSpace",
+                "InstParam",
+                "numbers"
             ],
             "snippet":{
-                "output":"print(${1},${2})",
-                "documentation":"Display something print(ptrToMessage,Lenght)",
+                "output":"${1} = prm${2|0,1,2,3,4|}",
+                "documentation":"Get parameters",
                 "commitChars":null
             },
             "translation":{
-                "ISCode_0":"%1eax = 4\n%1ebx = 1\n%1ecx = %4\n%1edx = %6\n%1syscall 0x80"
+                "ISCode_0":"%{1}%{2}%{3}=%{5}[rsp+8*%7]"
             }
         }
     }

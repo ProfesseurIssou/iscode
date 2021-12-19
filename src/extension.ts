@@ -149,7 +149,7 @@ function ConvertISCode(filePath:string,fileName:string,languageJson:LanguageJson
 				instructionFind = true;                                                                             //On definie comme quoi la ligne a était identifier
 				for(let i=1;i<match.length;i++){                                                                    //Pour chaque partie trouvé (sans compter le premier)
                     // outputPatern = outputPatern.replace("%"+String(i),match[i]);                                        //On remplace la partie
-                    outputPatern = outputPatern.split("%"+String(i)).join(match[i]);                                    //On remplace la partie
+                    outputPatern = outputPatern.split("%{"+String(i)+"}").join(match[i]);                                    //On remplace la partie
                 }
                 outputCode += outputPatern+"\n";                                                                    //On ajoute l'instruction dans le code finale
             }

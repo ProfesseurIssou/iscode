@@ -2,7 +2,7 @@
 	"name": "iscode",
 	"displayName": "ISCode",
 	"description": "Support ISCode",
-	"version": "0.2.1",
+	"version": "0.2.2",
 	"publisher": "ProfesseurIssou",
 	"repository": {
 		"url": "https://github.com/ProfesseurIssou/iscode"
