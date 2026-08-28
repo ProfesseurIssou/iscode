@@ -1,0 +1,22 @@
+#! iscode-level: isc0
+#! iscode-version: 1
+// Exemple ISCode niveau 0
+
+mode 64
+global main
+
+CONST:
+byte msg 'Hello'
+ten big 5
+
+VAR:
+reserve quadruple len 1
+
+CODE:
+func main
+  rax = 1
+  rdi = 1
+  rsi = msg
+  rdx = 6
+  syscall 0x80
+  include print

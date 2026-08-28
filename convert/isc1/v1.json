@@ -1,0 +1,66 @@
+{
+    "name": "isc1",
+    "version": 1,
+    "renderZoneOrder": ["head", "body", "tail"],
+    "pipeline": ["resolveParams"],
+    "target": { "level": "isc0", "version": 1 },
+    "availableTranslation": {
+        "ISCode_0": { "extension": "isc0", "grammar": "isc0", "target": "isc0", "emitHeader": true }
+    },
+    "tokens": {
+        "emptyLine": "^\\n*$",
+        "all": ".*",
+
+        "doubleSlash": "[/]{2}",
+        "indentation": "[ ]{0,}",
+        "optionalSpace": "[ ]{0,}",
+        "space": "[ ]{1,}",
+        "openParenthesis": "\\(",
+        "closeParenthesis": "\\)",
+        "comma": "\\,",
+
+        "numbers": "[0-9]{1,}",
+        "communData": "[a-zA-Z0-9_\\[\\]\\-\\+\\*\\,\\$\\']{1,}",
+
+        "InstEgal": "=",
+        "InstParam": "prm"
+    },
+    "instructions": {
+        "emptyLine": {
+            "syntax": [
+                "emptyLine"
+            ],
+            "ast": { "op": "emptyLine" },
+            "snippet": null,
+            "translation": {}
+        },
+        "commentLine": {
+            "syntax": [
+                "indentation",
+                "doubleSlash",
+                "all"
+            ],
+            "ast": { "op": "comment", "text": "%{3}" },
+            "snippet": null,
+            "translation": {}
+        },
+        "getParams": {
+            "syntax": [
+                "indentation",
+                "communData",
+                "optionalSpace",
+                "InstEgal",
+                "optionalSpace",
+                "InstParam",
+                "numbers"
+            ],
+            "ast": { "op": "getParams", "dst": "%{2}", "index": "%{7}" },
+            "snippet": {
+                "output": "${1} = prm${2|0,1,2,3,4|}",
+                "documentation": "Get parameters",
+                "commitChars": null
+            },
+            "translation": {}
+        }
+    }
+}

@@ -1,0 +1,569 @@
+{
+    "name": "isc0",
+    "version": 1,
+    "renderZoneOrder": ["head", "body", "tail"],
+    "pipeline": [],
+    "availableTranslation": {
+        "isc0": { "extension": "isc0", "emitHeader": true },
+        "nasm_x86_x64": { "extension": "nasm" }
+    },
+    "tokens": {
+        "emptyLine": "^\\n*$",
+        "all": ".*",
+
+        "doubleSlash": "[/]{2}",
+        "indentation": "^[ ]{0,}",
+        "optionalSpace": "[ ]{0,}",
+        "space": "[ ]{1,}",
+        "comma": ",",
+
+        "numbers": "[0-9]{1,}",
+        "communData": "[a-zA-Z0-9_\\[\\]\\-\\+\\*\\$']{1,}",
+
+        "InstMode": "mode",
+        "InstGlobal": "global",
+
+        "InstFunc": "func",
+        "InstCallFunc": "[^a-zA-Z]call",
+        "InstSyscall": "syscall",
+        "InstSectConstant": "CONST:",
+        "InstSectVar": "VAR:",
+        "InstSectCode": "CODE:",
+        "InstEgal": "=",
+        "InstEquivalent": "equ",
+        "InstReserve": "reserve",
+        "InstPush": "push",
+        "InstPop": "pop",
+        "InstCompare": "if",
+
+        "InstInclude": "include",
+        "InstIncludeName": "print",
+
+        "TypeByte": "byte|BYTE",
+        "TypeWord": "word|WORD",
+        "TypeDouble": "double|DOUBLE",
+        "TypeQuadruple": "quadruple|QUADRUPLE",
+        "TypeTen": "ten|TEN",
+        "AnyType": "byte|BYTE|word|WORD|double|DOUBLE|quadruple|QUADRUPLE|ten|TEN"
+    },
+    "instructions": {
+        "emptyLine": {
+            "syntax": [
+                "emptyLine"
+            ],
+            "ast": { "op": "emptyLine" },
+            "snippet": null,
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "" } ]
+            }
+        },
+        "commentLine": {
+            "syntax": [
+                "indentation",
+                "doubleSlash",
+                "all"
+            ],
+            "ast": { "op": "comment", "text": "%{3}" },
+            "snippet": null,
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "//%{text}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": ";%{text}" } ]
+            }
+        },
+
+        "architectureMode": {
+            "syntax": [
+                "indentation",
+                "InstMode",
+                "space",
+                "numbers"
+            ],
+            "ast": { "op": "mode", "bits": "%{4}" },
+            "snippet": {
+                "output": "mode ${1|8,16,32,64|}",
+                "documentation": "Set architecture mode",
+                "commitChars": ["."]
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "mode %{bits}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "bits %{bits}" } ]
+            }
+        },
+        "global": {
+            "syntax": [
+                "indentation",
+                "InstGlobal",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "global", "name": "%{4}" },
+            "snippet": {
+                "output": "global ${1}",
+                "documentation": "Set entry point",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "global %{name}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "global %{name}" } ]
+            }
+        },
+
+        "function": {
+            "syntax": [
+                "indentation",
+                "InstFunc",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "func", "name": "%{4}" },
+            "snippet": {
+                "output": "func ${1}",
+                "documentation": "Set label",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "func %{name}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name}:" } ]
+            }
+        },
+        "callFunction": {
+            "syntax": [
+                "indentation",
+                "InstCallFunc",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "call", "target": "%{4}" },
+            "snippet": {
+                "output": "call ${1}",
+                "documentation": "Call a function",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "call %{target}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "call %{target}" } ]
+            }
+        },
+
+        "syscall": {
+            "syntax": [
+                "indentation",
+                "InstSyscall",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "syscall", "num": "%{4}" },
+            "snippet": {
+                "output": "syscall ${1}",
+                "documentation": "System call",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "syscall %{num}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "int %{num}" } ]
+            }
+        },
+
+        "sectionConstant": {
+            "syntax": [
+                "indentation",
+                "InstSectConstant"
+            ],
+            "ast": { "op": "sectionConstant" },
+            "snippet": {
+                "output": "CONST:",
+                "documentation": "Constants section",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "CONST:" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "section .data" } ]
+            }
+        },
+        "sectionVariable": {
+            "syntax": [
+                "indentation",
+                "InstSectVar"
+            ],
+            "ast": { "op": "sectionVariable" },
+            "snippet": {
+                "output": "VAR:",
+                "documentation": "Variables section",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "VAR:" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "section .bss" } ]
+            }
+        },
+        "sectionCode": {
+            "syntax": [
+                "indentation",
+                "InstSectCode"
+            ],
+            "ast": { "op": "sectionCode" },
+            "snippet": {
+                "output": "CODE:",
+                "documentation": "Code section",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "CODE:" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "section .text" } ]
+            }
+        },
+
+        "assign": {
+            "syntax": [
+                "indentation",
+                "communData",
+                "space",
+                "InstEgal",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "assign", "dst": "%{2}", "src": "%{6}" },
+            "snippet": {
+                "output": "${1} = ${2}",
+                "documentation": "Assign a register with value",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "%{dst} = %{src}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "mov %{dst},%{src}" } ]
+            }
+        },
+        "equivalent": {
+            "syntax": [
+                "indentation",
+                "InstEquivalent",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "equ", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "equ ${1} ${2}",
+                "documentation": "Equivalent constant",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "equ %{name} %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} equ %{value}" } ]
+            }
+        },
+
+        "defineByte": {
+            "syntax": [
+                "indentation",
+                "TypeByte",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "define", "type": "byte", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "byte ${1} ${2}",
+                "documentation": "Byte constant",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "byte %{name} %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} db %{value}" } ]
+            }
+        },
+        "defineWord": {
+            "syntax": [
+                "indentation",
+                "TypeWord",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "define", "type": "word", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "word ${1} ${2}",
+                "documentation": "Word constant",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "word %{name} %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} dw %{value}" } ]
+            }
+        },
+        "defineDouble": {
+            "syntax": [
+                "indentation",
+                "TypeDouble",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "define", "type": "double", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "double ${1} ${2}",
+                "documentation": "Double constant",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "double %{name} %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} dd %{value}" } ]
+            }
+        },
+        "defineQuadruple": {
+            "syntax": [
+                "indentation",
+                "TypeQuadruple",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "define", "type": "quadruple", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "quadruple ${1} ${2}",
+                "documentation": "Quadruple constant",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "quadruple %{name} %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} dq %{value}" } ]
+            }
+        },
+        "defineTen": {
+            "syntax": [
+                "indentation",
+                "TypeTen",
+                "space",
+                "communData",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "define", "type": "ten", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "ten ${1} ${2}",
+                "documentation": "Ten constant",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "ten %{name} %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} dt %{value}" } ]
+            }
+        },
+
+        "reserveByte": {
+            "syntax": [
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeByte",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "reserve", "type": "byte", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve byte ${1} ${2}",
+                "documentation": "Byte variable",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "reserve byte %{name} %{count}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} resb %{count}" } ]
+            }
+        },
+        "reserveWord": {
+            "syntax": [
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeWord",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "reserve", "type": "word", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve word ${1} ${2}",
+                "documentation": "Word variable",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "reserve word %{name} %{count}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} resw %{count}" } ]
+            }
+        },
+        "reserveDouble": {
+            "syntax": [
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeDouble",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "reserve", "type": "double", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve double ${1} ${2}",
+                "documentation": "Double variable",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "reserve double %{name} %{count}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} resd %{count}" } ]
+            }
+        },
+        "reserveQuadruple": {
+            "syntax": [
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeQuadruple",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "reserve", "type": "quadruple", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve quadruple ${1} ${2}",
+                "documentation": "Quadruple variable",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "reserve quadruple %{name} %{count}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} resq %{count}" } ]
+            }
+        },
+        "reserveTen": {
+            "syntax": [
+                "indentation",
+                "InstReserve",
+                "space",
+                "TypeTen",
+                "space",
+                "communData",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "reserve", "type": "ten", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve ten ${1} ${2}",
+                "documentation": "Ten variable",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "reserve ten %{name} %{count}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name} rest %{count}" } ]
+            }
+        },
+
+        "stackPush": {
+            "syntax": [
+                "indentation",
+                "InstPush",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "push", "value": "%{4}" },
+            "snippet": {
+                "output": "push ${1}",
+                "documentation": "Push data into the stack",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "push %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "push %{value}" } ]
+            }
+        },
+        "stackPop": {
+            "syntax": [
+                "indentation",
+                "InstPop",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "pop", "value": "%{4}" },
+            "snippet": {
+                "output": "pop ${1}",
+                "documentation": "Get data from the stack",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "pop %{value}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "pop %{value}" } ]
+            }
+        },
+
+        "includePrint": {
+            "syntax": [
+                "indentation",
+                "InstInclude",
+                "space",
+                "InstIncludeName"
+            ],
+            "ast": { "op": "includePrint" },
+            "snippet": {
+                "output": "include print",
+                "documentation": "Include the print routine (appended at the end of the output)",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "include print" } ],
+                "nasm_x86_x64": [
+                    { "zone": "body", "line": "call print" },
+                    { "zone": "tail", "line": [
+                        "print:",
+                        "    push rdx",
+                        "    mov rdx, -1",
+                        ".print_len:",
+                        "    inc rdx",
+                        "    cmp byte [rsi+rdx], 0",
+                        "    jne .print_len",
+                        "    mov rax, 1",
+                        "    mov rdi, 1",
+                        "    syscall",
+                        "    pop rdx",
+                        "    ret"
+                    ] }
+                ]
+            }
+        },
+
+        "if": {
+            "syntax": [
+                "indentation",
+                "InstCompare",
+                "space",
+                "AnyType",
+                "space",
+                "communData",
+                "optionalSpace",
+                "comma",
+                "optionalSpace",
+                "AnyType",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "if", "typeA": "%{4}", "a": "%{6}", "typeB": "%{10}", "b": "%{12}" },
+            "snippet": {
+                "output": "if ${1|byte,word,double,quadruple,ten|} ${2}, ${3|byte,word,double,quadruple,ten|} ${4}",
+                "documentation": "Compare two values",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "if %{typeA} %{a}, %{typeB} %{b}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "cmp %{typeA} %{a}, %{typeB} %{b}" } ]
+            }
+        }
+    }
+}

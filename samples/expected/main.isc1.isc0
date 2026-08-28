@@ -1,0 +1,7 @@
+#! iscode-level: isc0
+#! iscode-version: 1
+
+// Exemple ISCode niveau 1
+
+rax = [rsp+8*1]
+rbx = [rsp+8*2]

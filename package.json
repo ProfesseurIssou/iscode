@@ -2,7 +2,7 @@
 	"name": "iscode",
 	"displayName": "ISCode",
 	"description": "Support ISCode",
-	"version": "0.2.2",
+	"version": "0.3.0",
 	"publisher": "ProfesseurIssou",
 	"repository": {
 		"url": "https://github.com/ProfesseurIssou/iscode"
@@ -37,7 +37,8 @@
 		"watch": "tsc -watch -p ./",
 		"pretest": "npm run compile && npm run lint",
 		"lint": "eslint src --ext ts",
-		"test": "node ./out/test/runTest.js"
+		"test": "node ./out/test/runTest.js",
+		"test:pipeline": "npm run compile && node ./out/test/pipelineTest.js"
 	},
 	"devDependencies": {
 		"@types/vscode": "^1.60.0",

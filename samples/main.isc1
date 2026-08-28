@@ -1,0 +1,6 @@
+#! iscode-level: isc1
+#! iscode-version: 1
+// Exemple ISCode niveau 1
+
+rax = prm1
+rbx = prm2
