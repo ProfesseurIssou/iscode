@@ -12,6 +12,12 @@ import * as render from "../render";
 /*out/test -> racine du projet*/
 const rootPath = path.join(__dirname, "..", "..");
 
+/*Lit un fichier attendu en normalisant les fins de ligne (un clone Windows avec
+  core.autocrlf=true extrait les fichiers en CRLF ; le rendu du pipeline, lui, produit du LF).*/
+function readExpected(...parts: Array<string>): string {
+    return fs.readFileSync(path.join(rootPath, ...parts), { encoding: "utf8" }).replace(/\r\n/g, "\n");
+}
+
 function check(name: string, fn: () => void) {
     try {
         fn();
@@ -68,7 +74,7 @@ check("isc0 -> nasm : rendu complet + source map", () => {
     const nodes = passes.run(resolved.grammar, parsed.nodes);
     const result = render.render(nodes, resolved.grammar, "nasm_x86_x64");
 
-    const expected = fs.readFileSync(path.join(rootPath, "samples", "expected", "main.isc0.nasm"), { encoding: "utf8" });
+    const expected = readExpected("samples", "expected", "main.isc0.nasm");
     assert.strictEqual(result.text, expected);
 
     /*Source map : "msg db 'Hello'" (ligne 7 de la sortie) vient de la ligne 9 du source,
@@ -96,7 +102,7 @@ check("isc1 -> isc0 : passe resolveParams + header emis + source map", () => {
     const isc0 = language.loadGrammar(rootPath, "isc0");
     const result = render.render(nodes, isc0, "isc0", { emitHeader: true });
 
-    const expected = fs.readFileSync(path.join(rootPath, "samples", "expected", "main.isc1.isc0"), { encoding: "utf8" });
+    const expected = readExpected("samples", "expected", "main.isc1.isc0");
     assert.strictEqual(result.text, expected);
 
     /*Le fichier genere est re-traduisible : son header est resolu sans erreur ni avertissement*/
