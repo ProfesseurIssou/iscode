@@ -22,7 +22,7 @@ Deux fichiers sont produits à côté du fichier source :
 ```mermaid
 flowchart TD
     A["Fichier source (.isc0, .isc1...)"] --> B["Lecture de l'en-tête<br>#! iscode-level / #! iscode-version"]
-    B --> C["Choix de la grammaire<br>convert/&lt;niveau&gt;/v&lt;version&gt;.json"]
+    B --> C["Choix de la grammaire<br>convert/{niveau}/v{version}.json"]
     C --> D["Parser<br>les tokens de chaque instruction → regex,<br>chaque ligne reconnue devient un nœud"]
     D --> E[("AST<br>chaque nœud porte son op, ses champs<br>et son origine (fichier + ligne source)")]
     E --> F["Passes AST → AST<br>déclarées dans le champ pipeline<br>(ex : resolveParams)"]
@@ -202,5 +202,14 @@ npm run compile       # compilation TypeScript
 npm run test:pipeline # tests du pipeline (parse → passes → rendu), sans vscode
 npm run watch         # compilation continue
 ```
+
+### Traduire en ligne de commande (sans vscode)
+
+```bash
+npm run translate -- samples/main.isc0 nasm_x86_x64   # isc0 -> nasm (écrit samples/main.nasm + main.nasm.map)
+npm run translate -- samples/main.isc1                # isc1 -> isc0 (une seule cible : inutile de la préciser)
+```
+
+Le fichier traduit et sa source map `.map` sont écrits à côté du fichier source. Sans argument de cible et si plusieurs cibles existent, la liste est affichée.
 
 Exemples de fichiers source et sorties attendues : `samples/` (testés par `test:pipeline`).

@@ -4,3 +4,8 @@ node_modules
 .vscode-test/
 *.vsix
 .zcode/
+
+# sorties generees par les tests de traduction dans samples/
+samples/*.nasm
+samples/*.isc0
+samples/*.map

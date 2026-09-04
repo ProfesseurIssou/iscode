@@ -7,6 +7,7 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 ## [Unreleased]
 
 - Initial release
+- CLI de traduction sans VS Code : `npm run translate -- <fichier> [cible]` (écrit le fichier traduit + sa source map)
 
 ## [0.3.0] - 2026-08-28
 
