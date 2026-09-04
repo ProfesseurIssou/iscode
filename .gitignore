@@ -13,3 +13,8 @@ samples/*.map
 # studio : registry regenere depuis convert/ (build-registry.mjs) + captures du test de fumee
 studio/public/grammars/
 studio/smoke/
+
+# artefacts tsc emis a cote des .ts du studio (vitest/vite build)
+studio/src/**/*.js.map
+studio/src/**/*.js
+studio/*.js.map
