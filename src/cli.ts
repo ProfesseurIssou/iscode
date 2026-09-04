@@ -10,7 +10,7 @@ import * as passes from "./passes";
 import * as render from "./render";
 
 /*out/cli.js -> racine du projet (là où se trouve convert/)*/
-const extensionPath = path.join(__dirname, "..", "..");
+const extensionPath = path.join(__dirname, "..");
 
 function main() {
     const args = process.argv.slice(2);
