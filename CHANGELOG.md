@@ -8,9 +8,15 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 - Initial release
 
+## [0.3.2]
+
+- isc0 : `include print` n'injecte plus que la routine d'affichage (une seule fois, en fin de fichier) ; nouvelle instruction `print <expr>` qui place la chaîne dans `rsi` et appelle `print`
+- README : exemple complet de test de la conversion depuis un nouveau dossier, explication du rôle des source maps
+
 ## [0.3.1]
 
 - CLI de traduction sans VS Code : `npm run translate -- <fichier> [cible]` (écrit le fichier traduit + sa source map)
+- Tests du pipeline robustes aux checkouts CRLF (git autocrlf)
 
 ## [0.3.0] - 2026-08-28
 

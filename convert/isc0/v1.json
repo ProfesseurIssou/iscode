@@ -38,6 +38,7 @@
 
         "InstInclude": "include",
         "InstIncludeName": "print",
+        "InstPrint": "print",
 
         "TypeByte": "byte|BYTE",
         "TypeWord": "word|WORD",
@@ -520,7 +521,6 @@
             "translation": {
                 "isc0": [ { "zone": "body", "line": "include print" } ],
                 "nasm_x86_x64": [
-                    { "zone": "body", "line": "call print" },
                     { "zone": "tail", "line": [
                         "print:",
                         "    push rdx",
@@ -535,6 +535,28 @@
                         "    pop rdx",
                         "    ret"
                     ] }
+                ]
+            }
+        },
+
+        "print": {
+            "syntax": [
+                "indentation",
+                "InstPrint",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "print", "value": "%{4}" },
+            "snippet": {
+                "output": "print ${1}",
+                "documentation": "Print a NUL-terminated string (needs 'include print' once)",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "print %{value}" } ],
+                "nasm_x86_x64": [
+                    { "zone": "body", "line": "mov rsi,%{value}" },
+                    { "zone": "body", "line": "call print" }
                 ]
             }
         },

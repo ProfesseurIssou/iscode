@@ -78,12 +78,15 @@ check("isc0 -> nasm : rendu complet + source map", () => {
     assert.strictEqual(result.text, expected);
 
     /*Source map : "msg db 'Hello'" (ligne 7 de la sortie) vient de la ligne 9 du source,
-      "call print" (ligne 20) vient du "include print" (ligne 22).*/
+      "call print" (ligne 16) vient du "print msg" (ligne 18),
+      la routine generee (ligne 21) vient du "include print" (ligne 17).*/
     assert.strictEqual(result.map["7"].line, 9);
     assert.strictEqual(result.map["7"].file, "main.isc0");
-    assert.strictEqual(result.map["20"].line, 22);
-    /*Les lignes de la routine generee pointent aussi vers le "include print"*/
-    assert.strictEqual(result.map["22"].line, 22);
+    assert.strictEqual(result.map["16"].line, 18);
+    assert.strictEqual(result.map["21"].line, 17);
+    /*Une seule routine malgre le passage dans la passe/zone tail*/
+    const occurrences = result.text.match(/^print:/gm);
+    assert.strictEqual(occurrences ? occurrences.length : 0, 1);
 });
 
 check("isc1 -> isc0 : passe resolveParams + header emis + source map", () => {

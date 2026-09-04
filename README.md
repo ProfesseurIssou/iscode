@@ -1,4 +1,4 @@
-# ISCode Support 0.3.0
+# ISCode Support 0.3.2
 
 ISCode est un langage de programmation simplifié, pensé comme un "Python/Scratch vers l'assembleur" : on écrit du code simple et lisible, et l'extension le traduit en NASM x86/x64. Le langage est organisé en **niveaux** (`isc1`, le plus haut niveau, se traduit en `isc0`, qui se traduit en assembleur), et chaque niveau est défini **uniquement en JSON** — pas besoin de toucher au code pour ajouter une instruction.
 
@@ -14,6 +14,68 @@ Select the output format and wait
 Deux fichiers sont produits à côté du fichier source :
 - la **traduction** (`main.nasm`, `main.isc0`...) — les fichiers générés de niveau ISCode contiennent leur en-tête de version et sont donc re-traduisibles tels quels ;
 - une **source map** (`main.nasm.map`, `main.isc0.map`) qui trace chaque ligne de sortie vers sa ligne d'origine.
+
+## Tester la conversion (exemple depuis un nouveau dossier)
+
+```bash
+# 1. Récupérer et préparer le projet
+git clone https://github.com/ProfesseurIssou/iscode iscode-test
+cd iscode-test
+npm install
+npm run compile
+
+# 2. Test automatisé du pipeline (parse -> passes -> rendu sur les samples)
+npm run test:pipeline
+
+# 3. Traduire les exemples en ligne de commande
+npm run translate -- samples/main.isc0 nasm_x86_x64   # isc0 -> nasm
+npm run translate -- samples/main.isc1                # isc1 -> isc0
+```
+
+Résultats attendus dans `samples/` :
+- `main.nasm` : le NASM, avec la routine `print:` générée en fin de fichier ;
+- `main.isc0` : le `main.isc1` descendu d'un niveau, avec son en-tête — il est donc re-traduisible : `npm run translate -- samples/main.isc0 nasm_x86_x64` ;
+- les source maps `.map` à côté de chaque sortie.
+
+Pour vos propres fichiers : `npm run translate -- chemin/vers/monfichier.isc1`. Sans cible et si plusieurs cibles existent, la liste des cibles est affichée.
+
+**Étape 4 — tester l'extension réelle dans VS Code** : appuyez sur **F5** (configuration « Run Extension »), ouvrez un `.isc0` dans la fenêtre qui s'ouvre, puis utilisez le bouton **ISCode : Translate** de la barre de statut. C'est le seul test qui couvre l'interface (QuickPick, autocomplétion, messages).
+
+### Exemple : afficher une chaîne en isc0
+
+```
+#! iscode-level: isc0
+#! iscode-version: 1
+
+mode 64
+global main
+
+CONST:
+byte msg 'Hello'
+
+CODE:
+func main
+  include print
+  print msg
+  rax = 60
+  rdi = 0
+  syscall 0x80
+```
+
+`include print` (une seule fois) injecte la routine d'affichage en fin de fichier ; `print msg` place l'adresse de la chaîne dans `rsi` et appelle `print`. Le fichier `.nasm` produit :
+
+```asm
+main:
+  mov rsi,msg
+  call print
+  mov rax,60
+  mov rdi,0
+  int 0x80
+
+print:
+    push rdx
+    ...
+```
 
 ## Architecture
 
@@ -188,11 +250,14 @@ ISCode : Open translate folder
 ```JSON
 {
     "7": { "file": "main.isc0", "level": "isc0", "version": 1, "line": 9 },
-    "20": { "file": "main.isc0", "level": "isc0", "version": 1, "line": 22 }
+    "16": { "file": "main.isc0", "level": "isc0", "version": 1, "line": 18 },
+    "21": { "file": "main.isc0", "level": "isc0", "version": 1, "line": 17 }
 }
 ```
 
-Ici, la ligne 7 du fichier de sortie (`msg db 'Hello'`) vient de la ligne 9 du source, et la ligne 20 (`call print`) du `include print` en ligne 22. Le code généré par une passe hérite de l'origine de sa ligne source : la traçabilité traverse toute la cascade isc1 → isc0 → nasm.
+**Pourquoi ligne par ligne ?** Ce n'est pas une info de langage (un fichier est bien entièrement dans un seul niveau : c'est l'en-tête et le nom de la grammaire qui le disent), c'est de la **traçabilité** : la map répond à « de quelle ligne source vient chaque ligne de sortie ». C'est indispensable dès que le code généré se décale : `include print` (une ligne source) produit 12 lignes de NASM en fin de fichier, `print msg` en produit 2, les passes réécrivent des lignes. La ligne 7 de la sortie (`msg db 'Hello'`) vient de la ligne 9 du source, la ligne 16 (`call print`) du `print msg` en ligne 18, et toute la routine `print:` (ligne 21 et suivantes) du `include print` en ligne 17.
+
+Concrètement, ça sert à : retrouver la ligne de votre code responsable d'une erreur NASM (NASM donne une ligne du `.nasm`, la map la ramène à la vôtre) ; à la navigation dans une future UI (erreur cliquable → saut vers la ligne source) ; et la traçabilité traverse toute la cascade isc1 → isc0 → nasm puisque chaque nœud généré hérite de l'origine de sa ligne source.
 
 ## Développement
 
@@ -203,13 +268,4 @@ npm run test:pipeline # tests du pipeline (parse → passes → rendu), sans vsc
 npm run watch         # compilation continue
 ```
 
-### Traduire en ligne de commande (sans vscode)
-
-```bash
-npm run translate -- samples/main.isc0 nasm_x86_x64   # isc0 -> nasm (écrit samples/main.nasm + main.nasm.map)
-npm run translate -- samples/main.isc1                # isc1 -> isc0 (une seule cible : inutile de la préciser)
-```
-
-Le fichier traduit et sa source map `.map` sont écrits à côté du fichier source. Sans argument de cible et si plusieurs cibles existent, la liste est affichée.
-
-Exemples de fichiers source et sorties attendues : `samples/` (testés par `test:pipeline`).
+La traduction en ligne de commande (`npm run translate`) et l'exemple complet de test sont détaillés dans la section [Tester la conversion](#tester-la-conversion-exemple-depuis-un-nouveau-dossier). Exemples de fichiers source et sorties attendues : `samples/` (testés par `test:pipeline`).
