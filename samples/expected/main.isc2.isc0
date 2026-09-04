@@ -1,0 +1,40 @@
+#! iscode-level: isc0
+#! iscode-version: 1
+
+// Exemple ISCode niveau 2
+
+mode 64
+global main
+
+CONST:
+byte msg 'Hello'
+byte msg2 'World'
+
+VAR:
+reserve quadruple x 1
+
+CODE:
+func main
+  include print
+  rax = 2
+  push rax
+  rax = 3
+  rbx = rax
+  pop rax
+  rax + rbx
+  push rax
+  rax = 4
+  rbx = rax
+  pop rax
+  rax * rbx
+  [x] = rax
+  rax = 10
+  rbx = rax
+  rax = [x]
+  cmp rax,rbx
+  jle .L0
+    print msg
+  jmp .L1
+.L0:
+    print msg2
+.L1:

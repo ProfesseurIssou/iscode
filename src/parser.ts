@@ -7,13 +7,16 @@ interface CompiledInstruction {
     ast: { [key: string]: any }
 }
 
-/*Cache des regex compilées, une entrée par grammaire ("isc0@v1")*/
-const compiledCache: { [key: string]: Array<CompiledInstruction> } = {};
+/*Cache des regex compilées, par identité d'objet grammaire :
+  - grammaires du registry / chargées une fois : le même objet revient, le cache sert ;
+  - grammaires éditées (drafts du Studio, convert/ modifié pendant une session) :
+    un objet différent à chaque édition -> recompilation, jamais de regex périmée.*/
+const compiledCache = new WeakMap<LanguageJson, Array<CompiledInstruction>>();
 
 /*Construit une regex par instruction : chaque token de "syntax" devient un groupe de capture*/
 function compileGrammar(grammar: LanguageJson): Array<CompiledInstruction> {
-    const cacheKey = grammar.name + "@v" + grammar.version;
-    if (compiledCache[cacheKey]) return compiledCache[cacheKey];
+	const cached = compiledCache.get(grammar);
+	if (cached) return cached;
 
     const compiled: Array<CompiledInstruction> = [];
     for (const instructionName of Object.keys(grammar.instructions)) {
@@ -33,7 +36,7 @@ function compileGrammar(grammar: LanguageJson): Array<CompiledInstruction> {
         compiled.push({ name: instructionName, regex: new RegExp(regexSource), ast: instruction.ast });
     }
 
-    compiledCache[cacheKey] = compiled;
+    compiledCache.set(grammar, compiled);
     return compiled;
 }
 

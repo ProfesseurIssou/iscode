@@ -1,0 +1,21 @@
+{
+	"name": "iscode-studio",
+	"private": true,
+	"version": "0.1.0",
+	"type": "module",
+	"scripts": {
+		"dev": "node scripts/build-registry.mjs && vite",
+		"build": "node scripts/build-registry.mjs && tsc -p . && vite build",
+		"preview": "vite preview",
+		"registry": "node scripts/build-registry.mjs",
+		"test": "vitest run"
+	},
+	"devDependencies": {
+		"@types/node": "^26.4.1",
+		"monaco-editor": "^0.52.2",
+		"playwright-core": "^1.62.1",
+		"typescript": "^5.6.3",
+		"vite": "^5.4.11",
+		"vitest": "^2.1.8"
+	}
+}

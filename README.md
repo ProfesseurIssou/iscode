@@ -1,6 +1,6 @@
-# ISCode Support 0.3.2
+# ISCode Support 0.4.0
 
-ISCode est un langage de programmation simplifié, pensé comme un "Python/Scratch vers l'assembleur" : on écrit du code simple et lisible, et l'extension le traduit en NASM x86/x64. Le langage est organisé en **niveaux** (`isc1`, le plus haut niveau, se traduit en `isc0`, qui se traduit en assembleur), et chaque niveau est défini **uniquement en JSON** — pas besoin de toucher au code pour ajouter une instruction.
+ISCode est un langage de programmation simplifié, pensé comme un "Python/Scratch vers l'assembleur" : on écrit du code simple et lisible, et l'extension le traduit en NASM x86/x64. Le langage est organisé en **niveaux** (`isc2` le plus haut niveau : if/else et expressions → `isc1` : paramètres → `isc0` : assembleur simplifié → NASM), et chaque niveau est défini **uniquement en JSON** — pas besoin de toucher au code pour ajouter une instruction.
 
 ## Translate
 Open your ISCode file
@@ -30,6 +30,7 @@ npm run test:pipeline
 # 3. Traduire les exemples en ligne de commande
 npm run translate -- samples/main.isc0 nasm_x86_x64   # isc0 -> nasm
 npm run translate -- samples/main.isc1                # isc1 -> isc0
+npm run translate -- samples/main.isc2                # isc2 -> isc0 (if/else + expressions)
 ```
 
 Résultats attendus dans `samples/` :
@@ -99,12 +100,59 @@ Chaque niveau se traduit vers le niveau inférieur ; les passes font le travail 
 
 ```mermaid
 flowchart LR
-    A["main.isc1<br>x = prm2"] -->|"parse : op getParams"| B["AST isc1"]
-    B -->|"passe resolveParams<br>op assign"| C["AST isc0"]
-    C -->|"rendu cible isc0"| D["main.isc0<br>x = [rsp+8*2]<br>+ main.isc0.map"]
-    C -->|"rendu direct nasm<br>(possible aussi)"| E["main.nasm"]
-    D -->|"traduction isc0 → nasm"| F["main.nasm<br>+ main.nasm.map"]
+    A["main.isc2<br>x = (2 + 3) * 4<br>if x > 10"] -->|"parse"| B["AST isc2"]
+    B -->|"passes : buildBlocks,<br>lowerIf, lowerExpressions"| C["AST isc0<br>mov/add/imul,<br>sauts + labels"]
+    D["main.isc1<br>x = prm2"] -->|"passe resolveParams"| C
+    C -->|"rendu cible isc0"| E["main.isc0<br>+ main.isc0.map"]
+    C -->|"rendu direct nasm<br>(possible aussi)"| G["main.nasm"]
+    E -->|"traduction isc0 → nasm"| F["main.nasm<br>+ main.nasm.map"]
 ```
+
+## Niveau isc2 : if/else et expressions
+
+`isc2` est le niveau haut : il ajoute les **expressions arithmétiques à parenthèses** et les **blocs if/else par indentation** — deux constructions qui cassent le ligne-à-ligne et sont résolues par des passes de lowering (`buildBlocks` regroupe les corps indentés, `lowerIf` génère comparaison + saut inverse + labels uniques + jmp, `lowerExpressions` déplie les calculs avec un codegen à pile).
+
+```
+#! iscode-level: isc2
+#! iscode-version: 1
+
+VAR:
+reserve quadruple x 1
+
+CODE:
+func main
+  include print
+  x = (2 + 3) * 4
+  if x > 10
+    print msg
+  else
+    print msg2
+```
+
+`npm run translate -- samples/main.isc2` produit le isc0 équivalent — calcul déplié, if transformé en `cmp` + saut conditionnel inversé (`>` donne `jle` : sauter quand c'est faux) + labels générés :
+
+```
+  rax = 2
+  push rax
+  rax = 3
+  rbx = rax
+  pop rax
+  rax + rbx
+  ...
+  [x] = rax
+  rax = 10
+  rbx = rax
+  rax = [x]
+  cmp rax,rbx
+  jle .L0
+    print msg
+  jmp .L1
+.L0:
+    print msg2
+.L1:
+```
+
+Le `.isc0` généré est un vrai fichier isc0 — l'arithmétique (`x + y` → `add`), les sauts (`jmp`, `je`, `jle`...) et les labels (`.L0:`) font partie du langage — il se re-traduit donc en nasm normalement, chaque ligne restant tracée vers sa ligne isc2 dans la source map. Opérateurs : `+ - * /` (division signée), comparaisons `> < >= <= == !=`. Le corps d'un `if` = les lignes plus indentées que lui ; le `else` se place au même niveau que son `if`.
 
 ### Zones de sortie
 
@@ -269,3 +317,29 @@ npm run watch         # compilation continue
 ```
 
 La traduction en ligne de commande (`npm run translate`) et l'exemple complet de test sont détaillés dans la section [Tester la conversion](#tester-la-conversion-exemple-depuis-un-nouveau-dossier). Exemples de fichiers source et sorties attendues : `samples/` (testés par `test:pipeline`).
+
+## ISCode Studio
+
+`studio/` est une application web autonome (TypeScript + Vite + Monaco), qui réutilise **le même pipeline** que l'extension (`src/parser`, `passes`, `render`, importés directement, sans duplication) et ajoute :
+
+- **Translate** — éditeur ISCode (coloration générée depuis la grammaire, complétion via les `snippet`, erreurs de parse soulignées) avec traduction **en temps réel** côte à côte ; les lignes source et sortie sont liées par la source map : curseur dans la sortie → ligne d'origine surlignée, clic → révélée et centrée ; curseur source → lignes de sortie surlignées ;
+- **Languages** — les niveaux disponibles, leur chaîne de traduction (`isc1 → isc0 ⇒ nasm`), et les réglages du **registry de grammaires** ;
+- **Language Studio** — création de langages : édition de grammaire **par formulaire** (sections Tokens / Targets / Instructions avec boutons d'ajout, renommages propagés, réordonnancement des instructions — l'ordre compte) ou en JSON validé par un [JSON Schema](studio/schemas/grammar.schema.json), test live (source d'exemple → sorties par cible + table AST), et **validateurs** : tokens manquants, regex invalides, traductions manquantes par cible, et détection d'**instructions masquées** (le parser est « première regex qui matche gagne » — une instruction déclarée trop tard peut devenir inatteignable). La grammaire draft est utilisable immédiatement dans la vue Translate, et exportable en `convert/<niveau>/v<N>.json`.
+
+### Lancer le studio
+
+```bash
+cd studio
+npm install
+npm run dev       # serveur de dev (génère le registry puis lance Vite)
+npm run test      # tests unitaires (vitest) : validateurs, monarch, provider, pipeline
+npm run build     # build de production dans studio/dist
+```
+
+Ou depuis la racine : `npm run studio:dev` / `studio:build` / `studio:test`. Un test de fumée navigateur est disponible : `npm run build && npx vite preview --port 4173 & node scripts/smoke.mjs` (depuis `studio/`).
+
+### Registry de grammaires (serveur)
+
+Le studio ne charge pas les grammaires depuis `convert/` : il les récupère par HTTP depuis un **registry** — un dossier statique contenant un `manifest.json` (révision + niveaux + versions) et les grammaires. Le script `scripts/build-registry.mjs` le génère depuis `convert/` vers `studio/public/grammars/` ; en dev, Vite le sert tel quel.
+
+Pour brancher le futur serveur : déployer ce dossier (ou l'équivalent généré côté serveur) et pointer l'URL dans la vue **Languages** (bouton *Apply*). Le manifest est rechargé au démarrage et au clic sur *Refresh* ; les grammaires sont mises en cache dans le navigateur avec **repli hors-ligne** si le serveur ne répond pas.

@@ -6,7 +6,25 @@ Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how 
 
 ## [Unreleased]
 
-- Initial release
+- **Correctif parser** : cache des regex compilées par identité d'objet grammaire (`WeakMap`) au lieu de `nom@version` — une grammaire modifiée pendant une session (draft du Studio, `convert/` édité) n'utilise plus des regex périmées ; les marqueurs d'erreurs se mettent à jour immédiatement
+
+- **ISCode Studio** (`studio/`) : application web (Vite + TypeScript + Monaco) réutilisant le pipeline de l'extension
+  - vue **Translate** : éditeur avec coloration générée depuis la grammaire, complétion, erreurs soulignées, traduction temps réel côte à côte, sync source ↔ sortie via les source maps
+  - vue **Languages** : niveaux, chaînes de traduction, registry de grammaires HTTP (manifest + cache navigateur + repli hors-ligne) — point de branchement du futur serveur de grammaires
+  - vue **Language Studio** : création de langages — édition de grammaire par **formulaire** (tokens, cibles, instructions avec syntaxe/AST/snippet/traductions, boutons d'ajout, renommages propagés, réordonnancement) ou en JSON validé par schéma, test live (exemple → sorties + AST), validateurs (tokens/traductions manquants, détection d'instructions masquées), export `convert/<niveau>/v<N>.json`
+  - formulaire : toutes les références à l'existant en listes de sélection — « render via » et Output level (niveaux disponibles), Output version (versions du niveau), render key (cibles de la grammaire de sortie), passes du pipeline en cases à cocher ; valeurs de champs AST en sélecteur de captures (`n · token`) avec champ texte grisé tant qu'une capture est sélectionnée ; cibles rendant via un autre niveau affichées comme info explicite au lieu d'un compteur d'entrées trompeur
+  - refactor : parties pures de la résolution de grammaire extraites dans `src/grammar.ts` (réutilisable navigateur), `language.ts` ré-exporte (extension/CLI/tests inchangés)
+  - tests : vitest dans `studio/` (validateurs, monarch, provider, pipeline) + test de fumée navigateur (`studio/scripts/smoke.mjs`)
+
+## [0.4.0]
+
+### Niveau isc2 : lowering if/else + expressions
+- Nouveau niveau haut `isc2` : expressions arithmétiques à parenthèses (`x = (a + b) * 2`) et blocs if/else par indentation (`else` au niveau du `if`)
+- Passes de lowering : `buildBlocks` (regroupement des corps indentés), `lowerIf` (comparaison + saut conditionnel inversé + labels uniques `.L0`/`.L1` + jmp), `lowerExpressions` (codegen à pile : eval → rax, push/pop, opérations rax/rbx, division signée cqo + idiv)
+- Nouveau parser d'expressions récursif (`src/expressions.ts`) : priorités `* /` sur `+ -`, parenthèses, moins unaire
+- isc0 enrichi de façon additive (rétro-compatible, reste en v1) : arithmétique asm-style (`x + y` → `add`...), `cmp` sans mot-clé de taille, sauts (`jmp/je/jne/jl/jle/jg/jge/jz/jnz`), labels (`.L0:`)
+- Chaîne complète validée : isc2 → isc0 (re-parsable) → nasm, source maps de bout en bout (chaque ligne générée pointe vers sa ligne isc2)
+- Sample `samples/main.isc2` + section README dédiée + diagramme de cascade mis à jour
 
 ## [0.3.2]
 

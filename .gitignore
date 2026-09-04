@@ -9,3 +9,7 @@ node_modules
 samples/*.nasm
 samples/*.isc0
 samples/*.map
+
+# studio : registry regenere depuis convert/ (build-registry.mjs) + captures du test de fumee
+studio/public/grammars/
+studio/smoke/

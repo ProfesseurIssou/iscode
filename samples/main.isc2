@@ -1,0 +1,22 @@
+#! iscode-level: isc2
+#! iscode-version: 1
+// Exemple ISCode niveau 2
+
+mode 64
+global main
+
+CONST:
+byte msg 'Hello'
+byte msg2 'World'
+
+VAR:
+reserve quadruple x 1
+
+CODE:
+func main
+  include print
+  x = (2 + 3) * 4
+  if x > 10
+    print msg
+  else
+    print msg2

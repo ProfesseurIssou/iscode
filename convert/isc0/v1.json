@@ -40,6 +40,15 @@
         "InstIncludeName": "print",
         "InstPrint": "print",
 
+        "InstAdd": "\\+",
+        "InstSub": "-",
+        "InstMul": "\\*",
+        "InstDiv": "/",
+        "InstCmp2": "cmp",
+        "InstJump": "jmp|jle|jge|jne|je|jl|jg|jz|jnz",
+        "InstLabel": "[.a-zA-Z_][a-zA-Z0-9_.]*:",
+        "labelName": "[.a-zA-Z_][a-zA-Z0-9_.]*",
+
         "TypeByte": "byte|BYTE",
         "TypeWord": "word|WORD",
         "TypeDouble": "double|DOUBLE",
@@ -585,6 +594,146 @@
             "translation": {
                 "isc0": [ { "zone": "body", "line": "if %{typeA} %{a}, %{typeB} %{b}" } ],
                 "nasm_x86_x64": [ { "zone": "body", "line": "cmp %{typeA} %{a}, %{typeB} %{b}" } ]
+            }
+        },
+
+        "mathAdd": {
+            "syntax": [
+                "indentation",
+                "communData",
+                "space",
+                "InstAdd",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "mathAdd", "dst": "%{2}", "src": "%{6}" },
+            "snippet": {
+                "output": "${1} + ${2}",
+                "documentation": "Add : dst = dst + src",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "%{dst} + %{src}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "add %{dst},%{src}" } ]
+            }
+        },
+        "mathSub": {
+            "syntax": [
+                "indentation",
+                "communData",
+                "space",
+                "InstSub",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "mathSub", "dst": "%{2}", "src": "%{6}" },
+            "snippet": {
+                "output": "${1} - ${2}",
+                "documentation": "Subtract : dst = dst - src",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "%{dst} - %{src}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "sub %{dst},%{src}" } ]
+            }
+        },
+        "mathMul": {
+            "syntax": [
+                "indentation",
+                "communData",
+                "space",
+                "InstMul",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "mathMul", "dst": "%{2}", "src": "%{6}" },
+            "snippet": {
+                "output": "${1} * ${2}",
+                "documentation": "Multiply : dst = dst * src",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "%{dst} * %{src}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "imul %{dst},%{src}" } ]
+            }
+        },
+        "mathDiv": {
+            "syntax": [
+                "indentation",
+                "communData",
+                "space",
+                "InstDiv",
+                "space",
+                "communData"
+            ],
+            "ast": { "op": "mathDiv", "dst": "%{2}", "src": "%{6}" },
+            "snippet": {
+                "output": "${1} / ${2}",
+                "documentation": "Divide : dst = dst / src (signed, dividend in dst)",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "%{dst} / %{src}" } ],
+                "nasm_x86_x64": [
+                    { "zone": "body", "line": "cqo" },
+                    { "zone": "body", "line": "idiv %{src}" }
+                ]
+            }
+        },
+        "compare": {
+            "syntax": [
+                "indentation",
+                "InstCmp2",
+                "space",
+                "communData",
+                "optionalSpace",
+                "comma",
+                "optionalSpace",
+                "communData"
+            ],
+            "ast": { "op": "compare", "a": "%{4}", "b": "%{8}" },
+            "snippet": {
+                "output": "cmp ${1}, ${2}",
+                "documentation": "Compare two values (use with jumps)",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "cmp %{a},%{b}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "cmp %{a},%{b}" } ]
+            }
+        },
+        "jumpIf": {
+            "syntax": [
+                "indentation",
+                "InstJump",
+                "space",
+                "labelName"
+            ],
+            "ast": { "op": "jumpIf", "mnemonic": "%{2}", "target": "%{4}" },
+            "snippet": {
+                "output": "jmp ${1}",
+                "documentation": "Jump (jmp, je, jne, jl, jle, jg, jge, jz, jnz)",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "%{mnemonic} %{target}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{mnemonic} %{target}" } ]
+            }
+        },
+        "label": {
+            "syntax": [
+                "indentation",
+                "InstLabel"
+            ],
+            "ast": { "op": "label", "name": "%{2}" },
+            "snippet": {
+                "output": "${1:label}:",
+                "documentation": "Label (jump target)",
+                "commitChars": null
+            },
+            "translation": {
+                "isc0": [ { "zone": "body", "line": "%{name}" } ],
+                "nasm_x86_x64": [ { "zone": "body", "line": "%{name}" } ]
             }
         }
     }

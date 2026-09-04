@@ -1,0 +1,108 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "ISCode grammar",
+	"description": "Definition of an ISCode language level (convert/<level>/v<version>.json). Each source line is matched against instruction regexes (first match wins); recognized lines become AST nodes which are rendered per target into output zones.",
+	"type": "object",
+	"required": ["name", "version", "tokens", "instructions"],
+	"properties": {
+		"name": {
+			"type": "string",
+			"description": "Level name; must match the folder name (convert/<name>/) and the source file extension or '#! iscode-level' header."
+		},
+		"version": {
+			"type": "number",
+			"description": "Grammar version; a source file selects it with '#! iscode-version: <n>'."
+		},
+		"renderZoneOrder": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "Assembly order of output zones (default [\"head\", \"body\", \"tail\"]).",
+			"default": ["head", "body", "tail"]
+		},
+		"pipeline": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "AST-to-AST passes applied before rendering (TypeScript passes referenced by name, e.g. \"resolveParams\")."
+		},
+		"target": {
+			"type": "object",
+			"description": "Level expected in the produced file when translating to a lower ISCode level.",
+			"properties": {
+				"level": { "type": "string" },
+				"version": { "type": ["string", "number"] }
+			},
+			"required": ["level", "version"]
+		},
+		"availableTranslation": {
+			"type": "object",
+			"description": "Output formats offered in the target menu.",
+			"additionalProperties": {
+				"type": "object",
+				"required": ["extension"],
+				"properties": {
+					"extension": { "type": "string", "description": "Extension of the produced file (without dot)." },
+					"grammar": { "type": "string", "description": "Render with another level's grammar (e.g. isc1 rendered with isc0)." },
+					"target": { "type": "string", "description": "Render key inside the output grammar's translations (defaults to the target name)." },
+					"emitHeader": { "type": "boolean", "description": "Prepend '#! iscode-level/version' to the generated file (makes ISCode outputs re-translatable)." }
+				}
+			}
+		},
+		"tokens": {
+			"type": "object",
+			"description": "Named regex fragments, reused in instruction syntaxes. Each syntax token becomes a capture group (%{1}, %{2}...).",
+			"additionalProperties": { "type": "string" }
+		},
+		"instructions": {
+			"type": "object",
+			"description": "Instructions in declaration order: the FIRST instruction whose regex matches a line wins.",
+			"additionalProperties": {
+				"type": "object",
+				"required": ["syntax", "ast"],
+				"properties": {
+					"syntax": {
+						"type": "array",
+						"items": { "type": "string" },
+						"description": "Ordered token names composing the instruction regex."
+					},
+					"ast": {
+						"type": "object",
+						"description": "AST node template. Must define 'op'; values may use %{n} placeholders (regex captures).",
+						"required": ["op"],
+						"properties": {
+							"op": { "type": "string", "description": "Node operation name." }
+						}
+					},
+					"snippet": {
+						"type": ["object", "null"],
+						"description": "Autocompletion snippet (VS Code / Monaco snippet syntax).",
+						"required": ["output"],
+						"properties": {
+							"output": { "type": "string", "description": "Snippet body, e.g. \"mode ${1|8,16,32,64|}\"." },
+							"documentation": { "type": "string" },
+							"commitChars": { "type": ["array", "null"], "items": { "type": "string" } }
+						}
+					},
+					"translation": {
+						"type": "object",
+						"description": "Per render target: entries placed in output zones. Placeholders are named after AST fields (%{dst}, %{src}...).",
+						"additionalProperties": {
+							"type": "array",
+							"items": {
+								"type": "object",
+								"required": ["zone", "line"],
+								"properties": {
+									"zone": { "type": "string", "description": "Output zone (from renderZoneOrder); original indentation is re-applied in 'body'." },
+									"line": {
+										"type": ["string", "array"],
+										"items": { "type": "string" },
+										"description": "One line, or several lines, emitted in the zone."
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

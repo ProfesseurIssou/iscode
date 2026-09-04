@@ -8,6 +8,7 @@ import * as language from "../language";
 import * as parser from "../parser";
 import * as passes from "../passes";
 import * as render from "../render";
+import { parseExpression } from "../expressions";
 
 /*out/test -> racine du projet*/
 const rootPath = path.join(__dirname, "..", "..");
@@ -60,7 +61,6 @@ check("resolution de grammaire : header, fallback, version inconnue", () => {
 
 check("token manquant : erreur explicite (ancien bug TypeTen)", () => {
     const broken = JSON.parse(JSON.stringify(language.loadGrammar(rootPath, "isc0", 1)));
-    broken.version = 99; /*cache des regex compilées indexé par nom@version*/
     broken.instructions.defineTen.syntax = ["indentation", "TokenQuiNexistePas"];
     assert.throws(() => parser.parse("ten x 5\n", broken, "x.isc0"), /Token manquant/);
 });
@@ -130,6 +130,68 @@ check("op sans rendu pour la cible : erreur explicite", () => {
     const parsed = parser.parse("rax = prm1\n", grammar, "x.isc1");
     /*Sans passer par la pipeline resolveParams, getParams n'a pas de rendu*/
     assert.throws(() => render.render(parsed.nodes, grammar, "ISCode_0"), /Pas de rendu/);
+});
+
+check("parser d'expressions : priorites, parentheses, moins unaire", () => {
+    const parensFirst = parseExpression("(2 + 3) * 4");
+    assert.strictEqual(parensFirst.op, "*");
+    assert.strictEqual(parensFirst.left!.op, "+");
+    assert.strictEqual(parensFirst.right!.op, "atom");
+    assert.strictEqual(parensFirst.right!.value, "4");
+
+    const precedence = parseExpression("2 + 3 * 4");
+    assert.strictEqual(precedence.op, "+");
+    assert.strictEqual(precedence.right!.op, "*");
+
+    const twoParens = parseExpression("(2 + 3) * (4 - 1)");
+    assert.strictEqual(twoParens.op, "*");
+    assert.strictEqual(twoParens.left!.op, "+");
+    assert.strictEqual(twoParens.right!.op, "-");
+
+    const unary = parseExpression("-x + 2");
+    assert.strictEqual(unary.op, "+");
+    assert.strictEqual(unary.left!.op, "-"); /*moins unaire = 0 - x*/
+    assert.strictEqual(unary.left!.right!.value, "x");
+
+    assert.throws(() => parseExpression("(2 + 3"), /Parenthese/);
+    assert.throws(() => parseExpression("2 +"), /incomplete/);
+    assert.throws(() => parseExpression("2 @ 3"), /invalide/);
+});
+
+check("isc2 -> isc0 : if/else + expressions, puis chaîne complète vers nasm", () => {
+    const content = fs.readFileSync(path.join(rootPath, "samples", "main.isc2"), { encoding: "utf8" });
+    const resolved = language.resolveForFile(rootPath, "main.isc2", content);
+    assert.strictEqual(resolved.grammar.name, "isc2");
+    const parsed = parser.parse(content, resolved.grammar, "main.isc2");
+    assert.deepStrictEqual(parsed.errors, [], "toutes les lignes doivent etre reconnues");
+
+    const nodes = passes.run(resolved.grammar, parsed.nodes);
+
+    const isc0 = language.loadGrammar(rootPath, "isc0");
+    const result = render.render(nodes, isc0, "isc0", { emitHeader: true });
+    const expected = readExpected("samples", "expected", "main.isc2.isc0");
+    assert.strictEqual(result.text, expected);
+
+    /*Le isc0 généré est un vrai fichier isc0 : il repasse entierement dans le pipeline*/
+    const regenerated = parser.parse(result.text, isc0, "main.isc0");
+    assert.deepStrictEqual(regenerated.errors, [], "le isc0 genere doit etre re-parsable");
+    const nasm = render.render(passes.run(isc0, regenerated.nodes), isc0, "nasm_x86_x64");
+    assert.ok(nasm.text.indexOf("add rax,rbx") >= 0, "add manquant");
+    assert.ok(nasm.text.indexOf("imul rax,rbx") >= 0, "imul manquant");
+    assert.ok(nasm.text.indexOf("cmp rax,rbx") >= 0, "cmp manquant");
+    assert.ok(nasm.text.indexOf("jle .L0") >= 0, "saut conditionnel manquant");
+    assert.ok(nasm.text.indexOf(".L1:") >= 0, "label de fin manquant");
+    assert.strictEqual((nasm.text.match(/^print:/gm) || []).length, 1, "une seule routine print");
+});
+
+check("isc2 : else sans if et comparateur inconnu sont rejetés", () => {
+    const grammar = language.loadGrammar(rootPath, "isc2", 1);
+
+    const bad = parser.parse("  else\n", grammar, "x.isc2");
+    assert.throws(() => passes.run(grammar, bad.nodes), /'else' sans 'if'/);
+
+    const unknownCmp = parser.parse("if x <> 1\n  rax = 1\n", grammar, "x.isc2");
+    assert.ok(unknownCmp.errors.length > 0, "'<>' ne doit pas matcher ifBlock");
 });
 
 console.log(process.exitCode ? "TESTS EN ECHEC" : "TOUS LES TESTS PASSENT");

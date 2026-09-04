@@ -1,0 +1,355 @@
+{
+    "name": "isc2",
+    "version": 1,
+    "renderZoneOrder": ["head", "body", "tail"],
+    "pipeline": ["buildBlocks", "lowerIf", "lowerExpressions"],
+    "target": { "level": "isc0", "version": 1 },
+    "availableTranslation": {
+        "ISCode_0": { "extension": "isc0", "grammar": "isc0", "target": "isc0", "emitHeader": true }
+    },
+    "tokens": {
+        "emptyLine": "^\\n*$",
+        "all": ".*",
+
+        "doubleSlash": "[/]{2}",
+        "indentation": "^[ ]{0,}",
+        "optionalSpace": "[ ]{0,}",
+        "space": "[ ]{1,}",
+        "comma": ",",
+
+        "numbers": "[0-9]{1,}",
+        "communData": "[a-zA-Z0-9_\\[\\]\\-\\+\\*\\$']{1,}",
+        "exprAtom": "[^ =<>!]+",
+
+        "InstMode": "mode",
+        "InstGlobal": "global",
+
+        "InstFunc": "func",
+        "InstCallFunc": "[^a-zA-Z]call",
+        "InstSyscall": "syscall",
+        "InstSectConstant": "CONST:",
+        "InstSectVar": "VAR:",
+        "InstSectCode": "CODE:",
+        "InstEgal": "=",
+        "InstEquivalent": "equ",
+        "InstReserve": "reserve",
+        "InstPush": "push",
+        "InstPop": "pop",
+
+        "InstInclude": "include",
+        "InstIncludeName": "print",
+        "InstPrint": "print",
+
+        "InstIf": "if",
+        "InstElse": "else",
+        "InstCmpOp": ">=|<=|==|!=|>|<",
+
+        "TypeByte": "byte|BYTE",
+        "TypeWord": "word|WORD",
+        "TypeDouble": "double|DOUBLE",
+        "TypeQuadruple": "quadruple|QUADRUPLE",
+        "TypeTen": "ten|TEN",
+        "AnyType": "byte|BYTE|word|WORD|double|DOUBLE|quadruple|QUADRUPLE|ten|TEN"
+    },
+    "instructions": {
+        "emptyLine": {
+            "syntax": [ "emptyLine" ],
+            "ast": { "op": "emptyLine" },
+            "snippet": null,
+            "translation": {}
+        },
+        "commentLine": {
+            "syntax": [ "indentation", "doubleSlash", "all" ],
+            "ast": { "op": "comment", "text": "%{3}" },
+            "snippet": null,
+            "translation": {}
+        },
+
+        "architectureMode": {
+            "syntax": [ "indentation", "InstMode", "space", "numbers" ],
+            "ast": { "op": "mode", "bits": "%{4}" },
+            "snippet": {
+                "output": "mode ${1|8,16,32,64|}",
+                "documentation": "Set architecture mode",
+                "commitChars": ["."]
+            },
+            "translation": {}
+        },
+        "global": {
+            "syntax": [ "indentation", "InstGlobal", "space", "communData" ],
+            "ast": { "op": "global", "name": "%{4}" },
+            "snippet": {
+                "output": "global ${1}",
+                "documentation": "Set entry point",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "function": {
+            "syntax": [ "indentation", "InstFunc", "space", "communData" ],
+            "ast": { "op": "func", "name": "%{4}" },
+            "snippet": {
+                "output": "func ${1}",
+                "documentation": "Set label",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "callFunction": {
+            "syntax": [ "indentation", "InstCallFunc", "space", "communData" ],
+            "ast": { "op": "call", "target": "%{4}" },
+            "snippet": {
+                "output": "call ${1}",
+                "documentation": "Call a function",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "syscall": {
+            "syntax": [ "indentation", "InstSyscall", "space", "communData" ],
+            "ast": { "op": "syscall", "num": "%{4}" },
+            "snippet": {
+                "output": "syscall ${1}",
+                "documentation": "System call",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "sectionConstant": {
+            "syntax": [ "indentation", "InstSectConstant" ],
+            "ast": { "op": "sectionConstant" },
+            "snippet": {
+                "output": "CONST:",
+                "documentation": "Constants section",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "sectionVariable": {
+            "syntax": [ "indentation", "InstSectVar" ],
+            "ast": { "op": "sectionVariable" },
+            "snippet": {
+                "output": "VAR:",
+                "documentation": "Variables section",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "sectionCode": {
+            "syntax": [ "indentation", "InstSectCode" ],
+            "ast": { "op": "sectionCode" },
+            "snippet": {
+                "output": "CODE:",
+                "documentation": "Code section",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "assignExpr": {
+            "syntax": [
+                "indentation",
+                "communData",
+                "space",
+                "InstEgal",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "assignExpr", "dst": "%{2}", "expr": "%{6}" },
+            "snippet": {
+                "output": "${1} = ${2}",
+                "documentation": "Assign an expression : x = (a + b) * 2",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "ifBlock": {
+            "syntax": [
+                "indentation",
+                "InstIf",
+                "space",
+                "exprAtom",
+                "space",
+                "InstCmpOp",
+                "space",
+                "all"
+            ],
+            "ast": { "op": "ifBlock", "left": "%{4}", "cmpOp": "%{6}", "right": "%{8}", "then": [], "else": null },
+            "snippet": {
+                "output": "if ${1:x} > ${2:10}",
+                "documentation": "If block : the indented lines below are the body, 'else' at the same level",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "elseMark": {
+            "syntax": [ "indentation", "InstElse" ],
+            "ast": { "op": "elseMark" },
+            "snippet": {
+                "output": "else",
+                "documentation": "Else branch of the enclosing if (same indentation as its 'if')",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "equivalent": {
+            "syntax": [ "indentation", "InstEquivalent", "space", "communData", "space", "communData" ],
+            "ast": { "op": "equ", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "equ ${1} ${2}",
+                "documentation": "Equivalent constant",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "defineByte": {
+            "syntax": [ "indentation", "TypeByte", "space", "communData", "space", "all" ],
+            "ast": { "op": "define", "type": "byte", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "byte ${1} ${2}",
+                "documentation": "Byte constant",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "defineWord": {
+            "syntax": [ "indentation", "TypeWord", "space", "communData", "space", "all" ],
+            "ast": { "op": "define", "type": "word", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "word ${1} ${2}",
+                "documentation": "Word constant",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "defineDouble": {
+            "syntax": [ "indentation", "TypeDouble", "space", "communData", "space", "all" ],
+            "ast": { "op": "define", "type": "double", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "double ${1} ${2}",
+                "documentation": "Double constant",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "defineQuadruple": {
+            "syntax": [ "indentation", "TypeQuadruple", "space", "communData", "space", "all" ],
+            "ast": { "op": "define", "type": "quadruple", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "quadruple ${1} ${2}",
+                "documentation": "Quadruple constant",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "defineTen": {
+            "syntax": [ "indentation", "TypeTen", "space", "communData", "space", "all" ],
+            "ast": { "op": "define", "type": "ten", "name": "%{4}", "value": "%{6}" },
+            "snippet": {
+                "output": "ten ${1} ${2}",
+                "documentation": "Ten constant",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "reserveByte": {
+            "syntax": [ "indentation", "InstReserve", "space", "TypeByte", "space", "communData", "space", "communData" ],
+            "ast": { "op": "reserve", "type": "byte", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve byte ${1} ${2}",
+                "documentation": "Byte variable",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "reserveWord": {
+            "syntax": [ "indentation", "InstReserve", "space", "TypeWord", "space", "communData", "space", "communData" ],
+            "ast": { "op": "reserve", "type": "word", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve word ${1} ${2}",
+                "documentation": "Word variable",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "reserveDouble": {
+            "syntax": [ "indentation", "InstReserve", "space", "TypeDouble", "space", "communData", "space", "communData" ],
+            "ast": { "op": "reserve", "type": "double", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve double ${1} ${2}",
+                "documentation": "Double variable",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "reserveQuadruple": {
+            "syntax": [ "indentation", "InstReserve", "space", "TypeQuadruple", "space", "communData", "space", "communData" ],
+            "ast": { "op": "reserve", "type": "quadruple", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve quadruple ${1} ${2}",
+                "documentation": "Quadruple variable",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "reserveTen": {
+            "syntax": [ "indentation", "InstReserve", "space", "TypeTen", "space", "communData", "space", "communData" ],
+            "ast": { "op": "reserve", "type": "ten", "name": "%{6}", "count": "%{8}" },
+            "snippet": {
+                "output": "reserve ten ${1} ${2}",
+                "documentation": "Ten variable",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "stackPush": {
+            "syntax": [ "indentation", "InstPush", "space", "all" ],
+            "ast": { "op": "push", "value": "%{4}" },
+            "snippet": {
+                "output": "push ${1}",
+                "documentation": "Push data into the stack",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "stackPop": {
+            "syntax": [ "indentation", "InstPop", "space", "all" ],
+            "ast": { "op": "pop", "value": "%{4}" },
+            "snippet": {
+                "output": "pop ${1}",
+                "documentation": "Get data from the stack",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+
+        "includePrint": {
+            "syntax": [ "indentation", "InstInclude", "space", "InstIncludeName" ],
+            "ast": { "op": "includePrint" },
+            "snippet": {
+                "output": "include print",
+                "documentation": "Include the print routine (appended at the end of the output)",
+                "commitChars": null
+            },
+            "translation": {}
+        },
+        "print": {
+            "syntax": [ "indentation", "InstPrint", "space", "communData" ],
+            "ast": { "op": "print", "value": "%{4}" },
+            "snippet": {
+                "output": "print ${1}",
+                "documentation": "Print a NUL-terminated string (needs 'include print' once)",
+                "commitChars": null
+            },
+            "translation": {}
+        }
+    }
+}
