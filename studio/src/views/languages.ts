@@ -1,8 +1,80 @@
 import { appStorage } from "../core/storage";
 import { DEFAULT_REGISTRY_URL, type GrammarProvider } from "../core/provider";
+import { buildTransitionGraph, layoutTransitionGraph, type TransitionLayout } from "../core/transitions";
 import type { LanguageJson, TargetDef } from "../../../src/types";
 import type { View, ViewFactory } from "./view";
 import { el } from "./view";
+
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+/*SVG de l'arbre de transitions : arêtes (courbes + flèches + nom de la cible) puis
+	nœuds (rectangles arrondis ; sorties en pointillés, drafts et niveaux manquants surlignés).*/
+function transitionTreeSvg(layout: TransitionLayout): SVGSVGElement {
+	const svg = document.createElementNS(SVG_NS, "svg");
+	svg.setAttribute("class", "transition-svg");
+	svg.setAttribute("width", String(layout.width));
+	svg.setAttribute("height", String(layout.height));
+	svg.setAttribute("viewBox", "0 0 " + layout.width + " " + layout.height);
+
+	const defs = document.createElementNS(SVG_NS, "defs");
+	defs.innerHTML =
+		'<marker id="tt-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+		'<path d="M 0 0 L 10 5 L 0 10 z" class="tt-arrow-head"></path></marker>';
+	svg.appendChild(defs);
+
+	for (const line of layout.edges) {
+		const midY = (line.y1 + line.y2) / 2;
+		const path = document.createElementNS(SVG_NS, "path");
+		path.setAttribute("class", "tt-edge");
+		path.setAttribute("marker-end", "url(#tt-arrow)");
+		path.setAttribute("d",
+			"M " + line.x1 + " " + line.y1 +
+			" C " + line.x1 + " " + midY + ", " + line.x2 + " " + midY + ", " + line.x2 + " " + line.y2);
+		svg.appendChild(path);
+
+		const label = document.createElementNS(SVG_NS, "text");
+		label.setAttribute("class", "tt-edge-label");
+		label.setAttribute("x", String((line.x1 + line.x2) / 2));
+		label.setAttribute("y", String(midY + 4));
+		label.textContent = line.label;
+		svg.appendChild(label);
+	}
+
+	for (const box of layout.boxes) {
+		const group = document.createElementNS(SVG_NS, "g");
+		const classes = ["tt-node", box.node.kind === "output" ? "tt-output" : "tt-level"];
+		if (box.node.kind === "level" && box.node.isDraft) classes.push("tt-draft");
+		if (box.node.kind === "level" && box.node.missing) classes.push("tt-missing");
+		group.setAttribute("class", classes.join(" "));
+
+		const rect = document.createElementNS(SVG_NS, "rect");
+		rect.setAttribute("x", String(box.x));
+		rect.setAttribute("y", String(box.y));
+		rect.setAttribute("width", String(box.w));
+		rect.setAttribute("height", String(box.h));
+		rect.setAttribute("rx", "8");
+		group.appendChild(rect);
+
+		const name = document.createElementNS(SVG_NS, "text");
+		name.setAttribute("class", "tt-name");
+		name.setAttribute("x", String(box.x + box.w / 2));
+		name.setAttribute("y", String(box.y + 20));
+		name.textContent = box.node.kind === "level" ? box.node.level : box.node.output;
+		group.appendChild(name);
+
+		const sub = document.createElementNS(SVG_NS, "text");
+		sub.setAttribute("class", "tt-sub");
+		sub.setAttribute("x", String(box.x + box.w / 2));
+		sub.setAttribute("y", String(box.y + 36));
+		sub.textContent = box.node.kind === "level"
+			? (box.node.isDraft ? "draft" : (box.node.missing ? "missing" : "v" + box.node.versions.join(", v")))
+			: "output file";
+		group.appendChild(sub);
+		svg.appendChild(group);
+	}
+
+	return svg;
+}
 
 /*Chaîne de traduction d'un niveau : on suit les cibles qui rendent via une autre
 	grammaire (champ "grammar") jusqu'au bout de la cascade, et on collecte les
@@ -107,6 +179,7 @@ function levelCard(level: string, provider: GrammarProvider): HTMLElement {
 export function createLanguagesView(ctx: { provider: GrammarProvider }): View {
 	const provider = ctx.provider;
 	let container: HTMLElement;
+	let treeHost: HTMLElement;
 	let cardsHost: HTMLElement;
 	let urlInput: HTMLInputElement;
 	let statusLine: HTMLElement;
@@ -130,7 +203,24 @@ export function createLanguagesView(ctx: { provider: GrammarProvider }): View {
 		}
 	}
 
+	function renderTree(): void {
+		treeHost.replaceChildren();
+		try {
+			const graph = buildTransitionGraph(provider);
+			if (graph.nodes.length === 0) {
+				treeHost.appendChild(el("div", "meta", "No language available."));
+				return;
+			}
+			treeHost.appendChild(transitionTreeSvg(layoutTransitionGraph(graph)));
+			treeHost.appendChild(el("div", "hint",
+				"Each arrow is a translation target (its name is on the arrow), from the highest level down to the output files (dashed). Draft levels are highlighted, missing targets are marked."));
+		} catch (error) {
+			treeHost.appendChild(el("div", "meta error", String(error)));
+		}
+	}
+
 	function renderAll(): void {
+		renderTree();
 		renderCards();
 		renderStatus();
 		urlInput.value = provider.status.baseUrl;
@@ -181,6 +271,12 @@ export function createLanguagesView(ctx: { provider: GrammarProvider }): View {
 		settings.appendChild(el("div", "hint",
 			"The default registry is bundled with the app (generated from convert/). Point the URL to your own server to distribute and auto-update grammars."));
 		container.appendChild(settings);
+
+		const treeCard = el("div", "card transition-card");
+		treeCard.appendChild(el("h3", "card-title", "Transition tree"));
+		treeHost = el("div", "transition-host");
+		treeCard.appendChild(treeHost);
+		container.appendChild(treeCard);
 
 		cardsHost = el("div", "cards");
 		container.appendChild(cardsHost);

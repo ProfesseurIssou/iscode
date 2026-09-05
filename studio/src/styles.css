@@ -334,6 +334,25 @@ select:focus, .input:focus { border-color: var(--accent); }
 .target-row code { color: var(--accent-strong); }
 .muted { color: var(--muted); }
 
+/* ---------- Arbre de transitions (vue Languages) ---------- */
+
+.transition-card { max-width: 980px; margin: 16px 16px 0; }
+.transition-host { margin-top: 10px; overflow-x: auto; }
+
+.transition-svg { display: block; max-width: 100%; }
+.transition-svg .tt-node rect { fill: var(--panel-2); stroke: var(--border); stroke-width: 1.5; }
+.transition-svg .tt-node.tt-output rect { stroke-dasharray: 5 3; }
+.transition-svg .tt-node.tt-output .tt-name { fill: var(--ok); }
+.transition-svg .tt-node.tt-draft rect { stroke: rgba(229, 192, 123, .55); }
+.transition-svg .tt-node.tt-draft .tt-sub { fill: var(--warn); }
+.transition-svg .tt-node.tt-missing rect { stroke: rgba(240, 113, 106, .55); stroke-dasharray: 5 3; }
+.transition-svg .tt-node.tt-missing .tt-sub { fill: var(--error); }
+.transition-svg .tt-name { fill: var(--text); font-size: 13px; font-weight: 600; text-anchor: middle; }
+.transition-svg .tt-sub { fill: var(--muted); font-size: 11px; text-anchor: middle; }
+.transition-svg .tt-edge { fill: none; stroke: #3d4451; stroke-width: 1.5; }
+.transition-svg .tt-arrow-head { fill: #3d4451; }
+.transition-svg .tt-edge-label { fill: var(--accent-strong); font-size: 11px; text-anchor: middle; }
+
 /* ---------- Table AST ---------- */
 
 .ast-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
